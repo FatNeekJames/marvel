@@ -1,6 +1,5 @@
 node_modules/
 .next/
-app/generated/
 .env
 *.tsbuildinfo
 npm-debug.log*

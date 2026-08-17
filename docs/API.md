@@ -63,9 +63,10 @@ interface TimelineRepository {
 - `realities(dataset='main')` — returns the distinct realities for a dataset,
   alphabetically ordered. Used to populate the filter dropdown.
 
-The production implementation is `PrismaTimelineRepository` in
-`lib/repositories/prisma-timeline-repository.ts`, and `getTimelineRepository()` in
-`lib/repositories/index.ts` is the factory that returns it wired to the database client.
+The production implementation is `DrizzleTimelineRepository` in
+`lib/repositories/drizzle-timeline-repository.ts`, and `getTimelineRepository()` in
+`lib/repositories/index.ts` is the factory that returns it wired to the Drizzle client
+(which wraps the postgres.js driver; see `lib/db.ts`).
 
 ## HTTP API
 
@@ -141,8 +142,8 @@ curl 'http://localhost:3000/api/timeline?limit=999999'
 
 ## Notes / behaviour
 
-- The search is a case-insensitive `contains` across `title`, `reality`, and `note`
-  (database-side) — not a full-text index.
+- The search is a case-insensitive `ILIKE` (`%term%`) across `title`, `reality`, and
+  `note` (database-side) — not a full-text index.
 - Filtering is exact-match for `dataset` and `reality`.
 - The page (`app/page.tsx`) does **not** call the API; it queries the repository directly
   server-side and passes initial data as props. The API is a separate, independently

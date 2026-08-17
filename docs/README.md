@@ -13,7 +13,7 @@ for how the pieces fit together.
 | Document | What it covers |
 | --- | --- |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | How the app is structured: framework choices, layers, data flow, and design decisions. |
-| [`DATABASE.md`](DATABASE.md) | The Prisma data model, the schema, migrations, seeding, and database workflow. |
+| [`DATABASE.md`](DATABASE.md) | The Drizzle data model, the schema, migrations, seeding, and database workflow. |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Local setup, the dev server orchestration script, and day-to-day tooling. |
 | [`API.md`](API.md) | The public API routes, query parameters, and the domain/repository contract. |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production builds, environment variables, security headers, and deployment steps. |
@@ -24,13 +24,13 @@ for how the pieces fit together.
 
 ```sh
 npm install
-npm run db:generate
 npm run dev
 ```
 
-Requires **Node.js 24+**. `npm run dev` boots a local PostgreSQL-compatible database,
-applies migrations, seeds the 278 timeline records, and starts Next.js automatically.
-See [`DEVELOPMENT.md`](DEVELOPMENT.md) for details.
+Requires **Node.js 24+** and a local PostgreSQL server. `npm run dev` creates the
+`temporal_loom` database if needed, applies migrations, seeds the 278 timeline
+records, and starts Next.js automatically. See [`DEVELOPMENT.md`](DEVELOPMENT.md) for
+details.
 
 ## Verifying changes
 
@@ -45,8 +45,8 @@ Runs lint, typecheck, tests, and a production build. See [`TESTING.md`](TESTING.
 ```
 app/          Next.js App Router pages, layout, error/loading states, API routes
 components/   Client components: the Three.js canvas and the explorer UI
-lib/          Domain model, repository interfaces, and the Prisma adapter
-prisma/       Schema, migrations, seed script, and seed data
+lib/          Domain model, Drizzle schema, repository interfaces, and the Drizzle adapter
+drizzle/      SQL migrations and the migration journal
 scripts/      Dev-server orchestration script
 test/         Vitest unit tests
 ```

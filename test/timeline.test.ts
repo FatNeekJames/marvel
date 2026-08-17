@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeQuery } from '../lib/domain/timeline';
-import seedData from '../prisma/seed-data.json';
+import seedData from '../lib/db/seed-data.json';
 
 describe('normalizeQuery', () => {
   it('applies stable defaults', () => expect(normalizeQuery({})).toEqual({ dataset: 'main', reality: '', search: '', limit: 500 }));

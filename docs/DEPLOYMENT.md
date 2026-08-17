@@ -26,40 +26,29 @@ DATABASE_URL="postgres://user:password@host:5432/dbname"
 Copy `.env.example` to `.env` and replace the value with the deployed connection string.
 `.env` is git-ignored; in a hosted platform, set `DATABASE_URL` as a secret directly.
 
-> In development-only, `npm run dev` short-circuits this by starting a local Prisma
-> Postgres server and injecting `DATABASE_URL` itself. Production/Docker/`next start`
+> In development-only, `npm run dev` short-circuits this by connecting to a local
+> PostgreSQL server and injecting `DATABASE_URL` itself. Production/Docker/`next start`
 > has no such shortcut — set `DATABASE_URL` explicitly.
 
 ## Apply database migrations
 
-Migrations are committed under `prisma/migrations/`. On deploy, run:
+Migrations are committed under `drizzle/` (SQL files + journal). On deploy, run:
 
 ```sh
-npm run db:deploy      # prisma migrate deploy
+npm run db:deploy      # drizzle-kit migrate
 ```
 
 Apply migrations before or as part of the release so the schema matches the running
-code. Never run `db:migrate` (interactive dev variant) in production.
+code. The same command is used locally (`npm run db:migrate`); neither is interactive.
 
 ## Seed (one-time or as needed)
 
 ```sh
-npm run db:seed        # tsx prisma/seed.ts
+npm run db:seed        # tsx lib/db/seed.ts
 ```
 
-The seed is **idempotent** (upserts by `legacyKey`), so it is safe to run repeatedly.
-Run it once on a fresh production database.
-
-## Regenerate the Prisma client
-
-The generated client (`app/generated/prisma/`) is git-ignored, so it must be produced at
-build/deploy time:
-
-```sh
-npm run db:generate    # prisma generate
-```
-
-Include this in your install/build steps.
+The seed is **idempotent** (`ON CONFLICT DO UPDATE` by `legacyKey`), so it is safe to
+run repeatedly. Run it once on a fresh production database.
 
 ## Security posture
 
@@ -78,7 +67,8 @@ Security headers are configured centrally in `next.config.ts` and applied to all
 Other hardening in the codebase:
 
 - All API input is validated with **Zod** (bounds + types) before use.
-- **Prisma parameterises** all queries — no raw SQL interpolation.
+- **Drizzle parameterises** all queries — no raw SQL interpolation (the seeder's
+  `excluded.*` references only copy already-bound column values from the same row).
 - No third-party scripts are loaded at runtime.
 - Failure paths log details server-side but never leak connection details to users.
 - The app intentionally never falls back to browser storage for the dataset.
@@ -87,11 +77,10 @@ Other hardening in the codebase:
 
 1. Set `DATABASE_URL` to the production PostgreSQL connection string.
 2. `npm ci` (install from lockfile).
-3. `npm run db:generate`.
-4. `npm run db:deploy`.
-5. `npm run db:seed` (first deploy only).
-6. `npm run build`.
-7. Start with `npm run start` (or your platform’s Node runner against the build output).
+3. `npm run db:deploy`.
+4. `npm run db:seed` (first deploy only).
+5. `npm run build`.
+6. Start with `npm run start` (or your platform’s Node runner against the build output).
 
 ## Considerations
 
@@ -101,4 +90,4 @@ Other hardening in the codebase:
 - The API response sets `Cache-Control: private, max-age=30`, so an HTTP cache/CDN can
   reduce DB load for the JSON endpoint.
 - Keep `DATABASE_URL` out of client bundles. It is only read server-side (in
-  `lib/db.ts`, `prisma/seed.ts`, `scripts/dev.mjs`, and `prisma.config.ts`).
+  `lib/db.ts`, `lib/db/seed.ts`, `scripts/dev.mjs`, and `drizzle.config.ts`).

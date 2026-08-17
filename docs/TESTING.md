@@ -30,7 +30,7 @@ the tests exercise pure logic and static data, so they run fast and everywhere.
 - Prevents unbounded or empty queries.
   - `limit: -4` → clamps to `1`.
 
-**Timeline seed data (`prisma/seed-data.json`):**
+**Timeline seed data (`lib/db/seed-data.json`):**
 - Contains exactly **278** migrated records, each with a **stable unique** `legacyKey`
   (no duplicates).
 - Contains only bounded values the database accepts: every title and reality is
@@ -42,8 +42,7 @@ the tests exercise pure logic and static data, so they run fast and everywhere.
 `eslint-config-next/typescript`. It globally **ignores**:
 
 - `.next/**` — Next build output.
-- `app/generated/**` — the generated Prisma client.
-- `prisma/seed-data.json` — large data file.
+- `drizzle/**` — the committed migration folder.
 
 ## Type checking
 
@@ -52,9 +51,9 @@ The Next.js plugin enforces typed routes. `npm run typecheck` runs `tsc --noEmit
 
 ## Production build
 
-`npm run build` runs `next build`. Because the repo uses `next build` with the generated
-Prisma client, ensure you have run `npm run db:generate` first if the client is missing
-(otherwise the typecheck/build may fail on missing modules).
+`npm run build` runs `next build`. Because the page is `force-dynamic`, the build does
+not need a database — the page's database query failure is caught and renders the
+"Temporal Loom could not initialize" fallback during static analysis.
 
 ## Adding a test
 
@@ -71,7 +70,7 @@ describe('normalizeQuery', () => {
 });
 ```
 
-Sample JSON is imported directly with `import seedData from '../prisma/seed-data.json'`
+Sample JSON is imported directly with `import seedData from '../lib/db/seed-data.json'`
 (resolveJsonModule is enabled).
 
 ## CI recommendation

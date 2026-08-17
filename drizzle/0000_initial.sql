@@ -14,7 +14,7 @@ CREATE TABLE "timeline_entries" (
   "year_start" DOUBLE PRECISION,
   "year_end" DOUBLE PRECISION,
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMP(3) NOT NULL,
+  "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "timeline_entries_pkey" PRIMARY KEY ("id")
 );
 
@@ -38,7 +38,7 @@ CREATE TABLE "release_queue_items" (
   "title" VARCHAR(120) NOT NULL,
   "completed" BOOLEAN NOT NULL DEFAULT false,
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMP(3) NOT NULL,
+  "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "release_queue_items_pkey" PRIMARY KEY ("id")
 );
 
