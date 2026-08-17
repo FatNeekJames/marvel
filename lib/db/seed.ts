@@ -1,31 +1,33 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { timelineEntries } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import postgres from 'postgres'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import { timelineEntries } from '@/lib/db/schema'
+import { sql } from 'drizzle-orm'
 
 type SeedEntry = {
-  legacyKey: string;
-  dataset: string;
-  title: string;
-  universe: string;
-  reality: string;
-  note: string | null;
-  season: string | null;
-  episodes: string | null;
-  period: string | null;
-  yearStart: number | null;
-  yearEnd: number | null;
-};
+  legacyKey: string
+  dataset: string
+  title: string
+  universe: string
+  reality: string
+  note: string | null
+  season: string | null
+  episodes: string | null
+  period: string | null
+  yearStart: number | null
+  yearEnd: number | null
+}
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error('DATABASE_URL is required to seed the database');
+  const connectionString = process.env.DATABASE_URL
+  if (!connectionString) throw new Error('DATABASE_URL is required to seed the database')
 
-  const connection = postgres(connectionString, { max: 1 });
-  const db = drizzle(connection);
-  const entries = JSON.parse(await readFile(resolve('lib/db/seed-data.json'), 'utf8')) as SeedEntry[];
+  const connection = postgres(connectionString, { max: 1 })
+  const db = drizzle(connection)
+  const entries = JSON.parse(
+    await readFile(resolve('lib/db/seed-data.json'), 'utf8'),
+  ) as SeedEntry[]
 
   try {
     for (const entry of entries) {
@@ -45,14 +47,17 @@ async function main() {
             period: sql.raw(`excluded.period`),
             yearStart: sql.raw(`excluded.year_start`),
             yearEnd: sql.raw(`excluded.year_end`),
-            updatedAt: sql`now()`
-          }
-        });
+            updatedAt: sql`now()`,
+          },
+        })
     }
-    console.log(`Seeded ${entries.length} timeline records`);
+    console.log(`Seeded ${entries.length} timeline records`)
   } finally {
-    await connection.end();
+    await connection.end()
   }
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1; });
+main().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})

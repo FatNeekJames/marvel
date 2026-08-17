@@ -100,12 +100,23 @@ Keep the layering rule: components consume data through props / the repository, 
 the database directly. Client components that filter locally should do so with
 `useDeferredValue` + `useMemo` (as `TimelineExplorer` does) to keep typing responsive.
 
+### Format code
+
+Prettier owns formatting (see `.prettierrc`). Before committing, run:
+
+```sh
+npm run format
+```
+
+`npm run format:check` (part of `npm run check`) fails the build if anything has
+drifted, which keeps formatting consistent in CI and for other contributors.
+
 ## Troubleshooting
 
-| Symptom | Likely fix |
-| --- | --- |
-| `DATABASE_URL is required` | You ran `next dev` / a script that needs a DB without the orchestrated env. Use `npm run dev`, or set `DATABASE_URL`. |
-| `ECONNREFUSED` to localhost:5432 | PostgreSQL is not running. Start it (`brew services start postgresql@18`, or your platform's equivalent). |
-| Seed count mismatch in tests | The test asserts 278 records with unique `legacyKey`s; the data file must match. |
-| Migration conflicts | The `drizzle/` journal says a migration already applied but the DB disagrees. Reconcile the DB or reset the dev database. |
-| Database persists unexpectedly | Data is stored in your local PostgreSQL. To reset, `dropdb temporal_loom` and let `npm run dev` recreate it. |
+| Symptom                          | Likely fix                                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL is required`       | You ran `next dev` / a script that needs a DB without the orchestrated env. Use `npm run dev`, or set `DATABASE_URL`.     |
+| `ECONNREFUSED` to localhost:5432 | PostgreSQL is not running. Start it (`brew services start postgresql@18`, or your platform's equivalent).                 |
+| Seed count mismatch in tests     | The test asserts 278 records with unique `legacyKey`s; the data file must match.                                          |
+| Migration conflicts              | The `drizzle/` journal says a migration already applied but the DB disagrees. Reconcile the DB or reset the dev database. |
+| Database persists unexpectedly   | Data is stored in your local PostgreSQL. To reset, `dropdb temporal_loom` and let `npm run dev` recreate it.              |

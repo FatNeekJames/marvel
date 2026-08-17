@@ -42,16 +42,17 @@ so presentation and data concerns stay separate.
 
 ## Technology choices and the "why"
 
-| Choice | Reason |
-| --- | --- |
-| **Next.js 16 (App Router)** | Server rendering, route/API handlers, typed routes, and production builds in one framework. |
-| **React 19 + TypeScript** | Strict, typed client/server component boundaries. `strict: true` in `tsconfig.json`. |
+| Choice                       | Reason                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Next.js 16 (App Router)**  | Server rendering, route/API handlers, typed routes, and production builds in one framework.      |
+| **React 19 + TypeScript**    | Strict, typed client/server component boundaries. `strict: true` in `tsconfig.json`.             |
 | **PostgreSQL + Drizzle ORM** | Relational persistence with a typed query builder, SQL migrations, and a repository abstraction. |
-| **Tailwind CSS 4** | Utility-first styling; custom design tokens live in `globals.css` via `@theme`. |
-| **Three.js** | 3D rendering for the temporal loom, isolated behind one class. |
-| **Zod 4** | Runtime validation of API input before it reaches the repository. |
-| **postgres.js** | Lightweight PostgreSQL driver used both by the Drizzle client and the seed/migration tooling. |
-| **Vitest** | Fast unit tests that do not need a database. |
+| **Tailwind CSS 4**           | Utility-first styling; custom design tokens live in `globals.css` via `@theme`.                  |
+| **Three.js**                 | 3D rendering for the temporal loom, isolated behind one class.                                   |
+| **Zod 4**                    | Runtime validation of API input before it reaches the repository.                                |
+| **postgres.js**              | Lightweight PostgreSQL driver used both by the Drizzle client and the seed/migration tooling.    |
+| **Prettier**                 | Code formatting, enforced by `npm run format:check` inside `npm run check`.                      |
+| **Vitest**                   | Fast unit tests that do not need a database.                                                     |
 
 ## Layer boundaries
 
@@ -163,8 +164,11 @@ dataset is large and the app is database-backed.
   React strict mode, no powered-by header.
 - `drizzle.config.ts` — Drizzle Kit config: schema location (`lib/db/schema.ts`),
   migrations output (`drizzle/`), and the PostgreSQL dialect with a local DSN fallback.
-- `eslint.config.mjs` — Next core-web-vitals + TypeScript rules; ignores generated code
-  and the migration folder.
+- `eslint.config.mjs` — Next core-web-vitals + TypeScript rules, with
+  `eslint-config-prettier` disabling formatting rules; ignores generated code and the
+  migration folder.
+- `.prettierrc` + `.prettierignore` — Prettier formatting rules (no semicolons, single
+  quotes, trailing commas, 100-char width) and exclusions.
 - `postcss.config.mjs` — Tailwind PostCSS plugin.
 
 ## Key invariants

@@ -12,30 +12,30 @@ The read-only shape of one timeline record. All fields except `note`, `season`,
 
 ```ts
 type TimelineEntry = Readonly<{
-  id: string;
-  legacyKey: string;
-  dataset: string;
-  title: string;
-  universe: string;
-  reality: string;
-  note: string | null;
-  season: string | null;
-  episodes: string | null;
-  period: string | null;
-  yearStart: number | null;
-  yearEnd: number | null;
-}>;
+  id: string
+  legacyKey: string
+  dataset: string
+  title: string
+  universe: string
+  reality: string
+  note: string | null
+  season: string | null
+  episodes: string | null
+  period: string | null
+  yearStart: number | null
+  yearEnd: number | null
+}>
 ```
 
 ### `TimelineQuery`
 
 ```ts
 type TimelineQuery = Readonly<{
-  dataset?: string;   // exact dataset bucket (default 'main')
-  reality?: string;   // exact reality filter
-  search?: string;    // case-insensitive substring across title, reality, note
-  limit?: number;     // 1..500 (default 500)
-}>;
+  dataset?: string // exact dataset bucket (default 'main')
+  reality?: string // exact reality filter
+  search?: string // case-insensitive substring across title, reality, note
+  limit?: number // 1..500 (default 500)
+}>
 ```
 
 ### `normalizeQuery(query): Required<TimelineQuery>`
@@ -53,8 +53,8 @@ This is the single source of truth for input bounds shared by the repository and
 
 ```ts
 interface TimelineRepository {
-  find(query?: TimelineQuery): Promise<readonly TimelineEntry[]>;
-  realities(dataset?: string): Promise<readonly string[]>;
+  find(query?: TimelineQuery): Promise<readonly TimelineEntry[]>
+  realities(dataset?: string): Promise<readonly string[]>
 }
 ```
 
@@ -77,12 +77,12 @@ identically to `normalizeQuery`.
 
 **Query parameters:**
 
-| Param | Type | Default | Constraint |
-| --- | --- | --- | --- |
-| `dataset` | string | `main` | max 32 chars |
-| `reality` | string | — | optional, max 100 chars |
-| `search` | string | — | optional, max 120 chars |
-| `limit` | int | `500` | coerced int, min 1, max 500 |
+| Param     | Type   | Default | Constraint                  |
+| --------- | ------ | ------- | --------------------------- |
+| `dataset` | string | `main`  | max 32 chars                |
+| `reality` | string | —       | optional, max 100 chars     |
+| `search`  | string | —       | optional, max 120 chars     |
+| `limit`   | int    | `500`   | coerced int, min 1, max 500 |
 
 **Success — `200 OK`:**
 
@@ -114,7 +114,7 @@ Response header: `Cache-Control: private, max-age=30`.
 ```json
 {
   "error": "Invalid query",
-  "issues": [ /* Zod issue objects */ ]
+  "issues": [/* Zod issue objects */]
 }
 ```
 

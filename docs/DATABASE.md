@@ -24,21 +24,21 @@ There are four tables, matching the original schema 1:1.
 The core data entity — one row per temporal point in the timeline. This is the table
 the application actually reads.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | text (PK) | Random UUID generated client-side on insert. |
-| `legacyKey` | text, unique | Stable key (e.g. `main:0`) used for idempotent upserts. |
-| `dataset` | text | Dataset bucket; defaults to `main`. |
-| `title` | text | Entry title, e.g. "Eyes of Wakanda". |
-| `universe` | text | Universe label, e.g. `Earth-616`. |
-| `reality` | text | Reality label; also a filter axis. |
-| `note` | text? | Optional note (searchable). |
-| `season` | text? | Optional season label. |
-| `episodes` | text? | Optional episode label. |
-| `period` | text? | Human-readable period, e.g. `1200BC`. |
-| `yearStart` | double precision? | Numeric start year for the loom X position. |
-| `yearEnd` | double precision? | Numeric end year. |
-| `createdAt` / `updatedAt` | timestamp | Managed by DB defaults (`CURRENT_TIMESTAMP`). |
+| Column                    | Type              | Notes                                                   |
+| ------------------------- | ----------------- | ------------------------------------------------------- |
+| `id`                      | text (PK)         | Random UUID generated client-side on insert.            |
+| `legacyKey`               | text, unique      | Stable key (e.g. `main:0`) used for idempotent upserts. |
+| `dataset`                 | text              | Dataset bucket; defaults to `main`.                     |
+| `title`                   | text              | Entry title, e.g. "Eyes of Wakanda".                    |
+| `universe`                | text              | Universe label, e.g. `Earth-616`.                       |
+| `reality`                 | text              | Reality label; also a filter axis.                      |
+| `note`                    | text?             | Optional note (searchable).                             |
+| `season`                  | text?             | Optional season label.                                  |
+| `episodes`                | text?             | Optional episode label.                                 |
+| `period`                  | text?             | Human-readable period, e.g. `1200BC`.                   |
+| `yearStart`               | double precision? | Numeric start year for the loom X position.             |
+| `yearEnd`                 | double precision? | Numeric end year.                                       |
+| `createdAt` / `updatedAt` | timestamp         | Managed by DB defaults (`CURRENT_TIMESTAMP`).           |
 
 Indexes: unique `(legacyKey)`, `(dataset, reality)`, and `(title)`.
 
@@ -46,21 +46,21 @@ Indexes: unique `(legacyKey)`, `(dataset, reality)`, and `(title)`.
 
 Represents an application user keyed by an external identity.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | text (PK) | Random UUID generated client-side on insert. |
-| `externalId` | text, unique | External identity (OAuth / provider ID). |
-| `createdAt` | timestamp | Creation time, DB default. |
+| Column       | Type         | Notes                                        |
+| ------------ | ------------ | -------------------------------------------- |
+| `id`         | text (PK)    | Random UUID generated client-side on insert. |
+| `externalId` | text, unique | External identity (OAuth / provider ID).     |
+| `createdAt`  | timestamp    | Creation time, DB default.                   |
 
 ### `watchRecords`
 
 A many-to-many join table linking a `User` to a `TimelineEntry` they have watched.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `userId` | text | FK → `users.id`, cascade delete + update. |
-| `entryId` | text | FK → `timeline_entries.id`, cascade delete + update. |
-| `watchedAt` | timestamp | When it was watched, DB default. |
+| Column      | Type      | Notes                                                |
+| ----------- | --------- | ---------------------------------------------------- |
+| `userId`    | text      | FK → `users.id`, cascade delete + update.            |
+| `entryId`   | text      | FK → `timeline_entries.id`, cascade delete + update. |
+| `watchedAt` | timestamp | When it was watched, DB default.                     |
 
 Composite primary key: `(userId, entryId)`. Index on `entryId`.
 
@@ -68,13 +68,13 @@ Composite primary key: `(userId, entryId)`. Index on `entryId`.
 
 A user's release-queue item.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | text (PK) | Random UUID generated client-side on insert. |
-| `userId` | text | FK → `users.id`, cascade delete + update. |
-| `title` | varchar(120) | Queue item title. |
-| `completed` | boolean | Completion flag, default `false`. |
-| `createdAt` / `updatedAt` | timestamp | Managed by DB defaults. |
+| Column                    | Type         | Notes                                        |
+| ------------------------- | ------------ | -------------------------------------------- |
+| `id`                      | text (PK)    | Random UUID generated client-side on insert. |
+| `userId`                  | text         | FK → `users.id`, cascade delete + update.    |
+| `title`                   | varchar(120) | Queue item title.                            |
+| `completed`               | boolean      | Completion flag, default `false`.            |
+| `createdAt` / `updatedAt` | timestamp    | Managed by DB defaults.                      |
 
 Index on `(userId, createdAt)`.
 

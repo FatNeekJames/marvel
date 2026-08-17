@@ -6,13 +6,26 @@ How the project verifies correctness and what each quality gate covers.
 
 The umbrella command is `npm run check`, which runs, in order:
 
-1. `npm run lint` — ESLint (Next core-web-vitals + TypeScript configs).
-2. `npm run typecheck` — `tsc --noEmit` (strict TypeScript).
-3. `npm test` — Vitest unit tests.
-4. `npm run build` — a production Next.js build (catches build-time issues).
+1. `npm run format:check` — Prettier formatting check (no drift from `.prettierrc`).
+2. `npm run lint` — ESLint (Next core-web-vitals + TypeScript configs, with
+   `eslint-config-prettier` disabling rules that conflict with Prettier).
+3. `npm run typecheck` — `tsc --noEmit` (strict TypeScript).
+4. `npm test` — Vitest unit tests.
+5. `npm run build` — a production Next.js build (catches build-time issues).
 
 Run them individually with the corresponding `npm run …` command, or all at once with
 `npm run check`.
+
+## Formatting
+
+**Prettier 3** owns code formatting. Configuration lives in `.prettierrc` (no
+semicolons, single quotes, trailing commas, 100-char width) and `.prettierignore`
+(ignores `node_modules/`, `.next/`, `package-lock.json`, and the committed SQL
+migrations under `drizzle/`).
+
+- `npm run format` — format everything in place (`prettier --write .`).
+- `npm run format:check` — verify nothing has drifted (`prettier --check .`), enforced
+  by `npm run check`.
 
 ## Test framework
 
@@ -22,6 +35,7 @@ the tests exercise pure logic and static data, so they run fast and everywhere.
 ### What the tests cover
 
 **`normalizeQuery` (pure query normalization):**
+
 - Applies stable defaults when given an empty query.
   - `normalizeQuery({})` → `{ dataset: 'main', reality: '', search: '', limit: 500 }`.
 - Trims input and caps limits.
@@ -31,6 +45,7 @@ the tests exercise pure logic and static data, so they run fast and everywhere.
   - `limit: -4` → clamps to `1`.
 
 **Timeline seed data (`lib/db/seed-data.json`):**
+
 - Contains exactly **278** migrated records, each with a **stable unique** `legacyKey`
   (no duplicates).
 - Contains only bounded values the database accepts: every title and reality is
@@ -60,14 +75,14 @@ not need a database — the page's database query failure is caught and renders 
 Put tests in `test/`. Follow the existing style:
 
 ```ts
-import { describe, expect, it } from 'vitest';
-import { normalizeQuery } from '../lib/domain/timeline';
+import { describe, expect, it } from 'vitest'
+import { normalizeQuery } from '../lib/domain/timeline'
 
 describe('normalizeQuery', () => {
   it('applies stable defaults', () => {
-    expect(normalizeQuery({})).toEqual({ dataset: 'main', reality: '', search: '', limit: 500 });
-  });
-});
+    expect(normalizeQuery({})).toEqual({ dataset: 'main', reality: '', search: '', limit: 500 })
+  })
+})
 ```
 
 Sample JSON is imported directly with `import seedData from '../lib/db/seed-data.json'`

@@ -56,7 +56,7 @@ Security headers are configured centrally in `next.config.ts` and applied to all
 
 - **Content-Security-Policy** — `default-src 'self'`; `script-src 'self' 'unsafe-inline'`
   (dev also allows `unsafe-eval`); `style-src 'self' 'unsafe-inline'`; `img-src 'self'
-  data:`; `connect-src 'self'`; `object-src 'none'`; `base-uri 'self'`;
+data:`; `connect-src 'self'`; `object-src 'none'`; `base-uri 'self'`;
   `frame-ancestors 'none'`; `form-action 'self'`.
 - **`X-Frame-Options: DENY`** — prevents framing.
 - **`Permissions-Policy`** — disables camera, microphone, geolocation.

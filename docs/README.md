@@ -10,15 +10,15 @@ for how the pieces fit together.
 
 ## Document map
 
-| Document | What it covers |
-| --- | --- |
+| Document                             | What it covers                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | How the app is structured: framework choices, layers, data flow, and design decisions. |
-| [`DATABASE.md`](DATABASE.md) | The Drizzle data model, the schema, migrations, seeding, and database workflow. |
-| [`DEVELOPMENT.md`](DEVELOPMENT.md) | Local setup, the dev server orchestration script, and day-to-day tooling. |
-| [`API.md`](API.md) | The public API routes, query parameters, and the domain/repository contract. |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production builds, environment variables, security headers, and deployment steps. |
-| [`TESTING.md`](TESTING.md) | The test suite, quality gates, and how to verify changes. |
-| [`GLOSSARY.md`](GLOSSARY.md) | Domain and codebase terminology (TVA, Loom, realities, temporal points). |
+| [`DATABASE.md`](DATABASE.md)         | The Drizzle data model, the schema, migrations, seeding, and database workflow.        |
+| [`DEVELOPMENT.md`](DEVELOPMENT.md)   | Local setup, the dev server orchestration script, and day-to-day tooling.              |
+| [`API.md`](API.md)                   | The public API routes, query parameters, and the domain/repository contract.           |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md)     | Production builds, environment variables, security headers, and deployment steps.      |
+| [`TESTING.md`](TESTING.md)           | The test suite, quality gates, and how to verify changes.                              |
+| [`GLOSSARY.md`](GLOSSARY.md)         | Domain and codebase terminology (TVA, Loom, realities, temporal points).               |
 
 ## Quick start
 

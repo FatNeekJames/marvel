@@ -1,15 +1,32 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-void: #05060a;
   --color-panel: #090d17;
   --color-gold: #ffd24a;
   --color-muted: #8fa0c8;
-  --font-mono: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', Consolas, monospace;
 }
 
-html { color-scheme: dark; }
-body { margin: 0; min-height: 100vh; background: #05060a; color: #dfe6ff; font-family: var(--font-mono); }
-* { box-sizing: border-box; }
-button, input, select { font: inherit; }
-::selection { background: rgb(255 210 74 / 30%); color: white; }
+html {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #05060a;
+  color: #dfe6ff;
+  font-family: var(--font-mono);
+}
+* {
+  box-sizing: border-box;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+::selection {
+  background: rgb(255 210 74 / 30%);
+  color: white;
+}

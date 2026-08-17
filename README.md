@@ -29,6 +29,8 @@ Production and standalone database commands still require `DATABASE_URL`; copy `
 ## Quality checks
 
 ```sh
+npm run format        # format the codebase with Prettier
+npm run format:check  # fail if anything has drifted
 npm run lint
 npm run typecheck
 npm test
