@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiversal Temporal Loom</title>
+<style>
+  :root { --gold:#ffd24a; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#05060a; color:#dfe6ff;
+    font-family:Consolas,"Courier New",monospace; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .vignette { position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,.55) 100%); }
+  .hud { position:fixed; z-index:10; pointer-events:none; }
+  .hud * { pointer-events:auto; }
+  .panel { background:rgba(6,9,16,.82); border:1px solid rgba(255,210,74,.35);
+    border-radius:4px; padding:10px 12px; box-shadow:0 0 18px rgba(255,179,0,.08) inset, 0 6px 24px rgba(0,0,0,.5); }
+  #title { top:14px; left:70px; }
+  #title h1 { font-size:15px; letter-spacing:3px; color:var(--gold); text-shadow:0 0 12px rgba(255,210,74,.6); }
+  #title .sub { font-size:10px; letter-spacing:2px; color:#8fa0c8; margin-top:3px; }
+  #controls { top:14px; right:14px; width:258px; font-size:11px; }
+  #controls h2 { font-size:11px; letter-spacing:2px; color:var(--gold); margin-bottom:8px; }
+  .row { display:flex; align-items:center; gap:8px; margin:6px 0; }
+  .row label { color:#8fa0c8; width:86px; flex:none; }
+  .row input[type=range] { flex:1; accent-color:#ffd24a; }
+  #scrubWrap { margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,210,74,.18); }
+  #scrubLabel { text-align:center; color:#ffd274; margin-top:5px; font-size:11px; }
+  button.btn { background:rgba(255,210,74,.12); color:var(--gold); border:1px solid rgba(255,210,74,.5);
+    border-radius:3px; font-family:inherit; font-size:11px; letter-spacing:1px; cursor:pointer; padding:4px 8px; }
+  button.btn:hover { background:rgba(255,210,74,.28); }
+  button.btn.act { background:var(--gold); color:#151307; }
+  .btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  #legend { top:100px; left:14px; max-height:44vh; overflow-y:auto; font-size:11px; min-width:196px; max-width:260px; }
+  #legend h2 { font-size:11px; letter-spacing:2px; color:var(--gold); margin-bottom:6px; }
+  .leg-row { display:flex; align-items:center; gap:8px; padding:2px 0; cursor:pointer; color:#aeb9de; }
+  .leg-row:hover { color:#fff; }
+  .leg-swatch { width:12px; height:12px; border-radius:50%; box-shadow:0 0 8px currentColor; flex:none; }
+  .leg-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .leg-count { color:#5f6b8d; }
+  .leg-row.on .leg-name { color:var(--gold); }
+  .leg-row.dim .leg-swatch { opacity:.18; }
+  #card { bottom:18px; left:14px; font-size:11px; max-width:360px; display:none; }
+  #card .c-head { display:flex; justify-content:space-between; align-items:center; }
+  #card .c-title { color:var(--gold); font-size:13px; letter-spacing:1px; }
+  #card .c-x { cursor:pointer; color:#7a86a6; padding:0 4px; }
+  #card .c-x:hover { color:#fff; }
+  #card .c-line { color:#aeb9de; margin:2px 0; }
+  #card .c-line b { color:#dfe6ff; font-weight:normal; }
+  #card .tag { display:inline-block; border:1px solid rgba(255,210,74,.4); color:var(--gold);
+    border-radius:2px; padding:0 6px; font-size:10px; letter-spacing:1px; margin-bottom:6px; }
+  #help { bottom:18px; right:14px; text-align:right; font-size:10px; color:#5f6b8d; line-height:1.6; }
+  /* doom clock */
+  @keyframes doompulse { 0%,100% { box-shadow:0 0 12px rgba(255,60,40,.22); } 50% { box-shadow:0 0 28px rgba(255,60,40,.6); } }
+  #doom { bottom:14px; left:50%; transform:translateX(-50%); text-align:center; font-size:11px; min-width:248px;
+    background:rgba(12,5,5,.86); border-color:rgba(255,70,50,.55); animation:doompulse 2.4s ease-in-out infinite; }
+  #doom h2 { font-size:10px; letter-spacing:3px; color:#ff8a6e; text-align:center; margin-bottom:3px; cursor:pointer; }
+  #doom .doom-d { color:#c8d3f0; letter-spacing:1px; font-size:9.5px; }
+  #doom .doom-t { font-size:24px; letter-spacing:3px; color:#ff9a80; text-shadow:0 0 16px rgba(255,90,55,.6);
+    font-variant-numeric:tabular-nums; margin:3px 0 2px; }
+  #doom .doom-s { font-size:9px; letter-spacing:2px; color:#8fa0c8; }
+  #doom.collapse .doom-d, #doom.collapse .doom-t, #doom.collapse .doom-s { display:none; }
+  #doom.zero { animation:none; border-color:var(--gold); }
+  .toggle { width:34px; height:16px; border-radius:9px; background:#1a2236; border:1px solid rgba(255,210,74,.3);
+    position:relative; cursor:pointer; flex:none; }
+  .toggle::after { content:""; position:absolute; width:12px; height:12px; border-radius:50%; top:1px; left:2px; background:#5f6b8d; transition:left .15s, background .15s; }
+  .toggle.on { background:rgba(255,210,74,.25); }
+  .toggle.on::after { left:18px; background:var(--gold); box-shadow:0 0 8px var(--gold); }
+  #legend::-webkit-scrollbar { width:6px; }
+  #legend::-webkit-scrollbar-thumb { background:rgba(255,210,74,.3); border-radius:3px; }
+  /* tabs */
+  #tabbar { top:12px; left:50%; transform:translateX(-50%); display:flex; z-index:15; }
+  .tab { background:rgba(6,9,16,.86); color:#8fa0c8; border:1px solid rgba(255,210,74,.28);
+    font-family:inherit; font-size:11px; letter-spacing:2px; padding:7px 16px; cursor:pointer; }
+  .tab:first-child { border-radius:4px 0 0 4px; border-right:none; }
+  .tab:last-child { border-radius:0 4px 4px 0; }
+  .tab:hover { color:#dfe6ff; }
+  .tab.act { background:var(--gold); color:#151307; box-shadow:0 0 14px rgba(255,210,74,.35); }
+
+  /* universe menu (hamburger) */
+  #burger { top:14px; left:14px; width:44px; height:44px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:5px; cursor:pointer; pointer-events:auto; z-index:20; padding:8px; }
+  #burger .bar { display:block; width:20px; height:2px; background:var(--gold); box-shadow:0 0 6px rgba(255,210,74,.6);
+    transition:all .2s; }
+  #burger:hover .bar { background:#fff; }
+  #burger.on .bar:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+  #burger.on .bar:nth-child(2) { opacity:0; }
+  #burger.on .bar:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+  #uniMenu { top:68px; left:14px; min-width:220px; z-index:21; display:none; padding:4px 4px 8px; }
+  #uniMenu.on { display:block; }
+  .uni-title { font-size:10px; letter-spacing:3px; color:var(--gold); padding:6px 10px 8px;
+    border-bottom:1px solid rgba(255,210,74,.2); }
+  .uni-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:transparent;
+    border:none; border-bottom:1px solid rgba(255,210,74,.12); color:#aeb9de; font-family:inherit; font-size:11px;
+    letter-spacing:2px; padding:9px 10px; cursor:pointer; }
+  .uni-item:last-child { border-bottom:none; }
+  .uni-item:hover { background:rgba(255,210,74,.12); color:#fff; }
+  .uni-item.act { color:var(--gold); }
+  .u-dot { width:9px; height:9px; border-radius:50%; box-shadow:0 0 8px currentColor; flex:none; }
+  .u-name { flex:1; }
+  .u-st { margin-left:auto; color:#5f6b8d; font-size:9px; letter-spacing:1px; }
+  #uniShell { position:fixed; inset:0; z-index:18; display:none; flex-direction:column; align-items:center;
+    justify-content:center; gap:12px; text-align:center;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,210,74,.022) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 0%, rgba(70,55,15,.16), transparent 60%),
+      #030509; }
+  #uniShell.on { display:flex; }
+  .shell-name { font-size:26px; letter-spacing:6px; text-shadow:0 0 18px rgba(255,210,74,.5); }
+  .shell-tag { color:#aeb9de; font-size:11px; letter-spacing:3px; }
+  .shell-st { color:#8fa0c8; font-size:12px; letter-spacing:2px; }
+  .shell-hint { color:#5f6b8d; font-size:9px; letter-spacing:1px; margin-top:10px; }
+
+  /* release queue */
+  .rl-panel { position:fixed; right:18px; bottom:18px; width:280px; max-height:56vh; display:flex; flex-direction:column;
+    background:rgba(6,9,16,.9); border:1px solid rgba(255,210,74,.35); border-radius:4px;
+    box-shadow:0 0 18px rgba(0,0,0,.5); font-size:11px; z-index:5; }
+  .rl-head { padding:8px 10px; cursor:pointer; color:var(--gold); letter-spacing:2px; font-size:10px;
+    border-bottom:1px solid rgba(255,210,74,.2); display:flex; justify-content:space-between; user-select:none; gap:8px; }
+  .rl-count { color:#8fa0c8; letter-spacing:1px; }
+  .rl-body { overflow-y:auto; max-height: calc(56vh - 82px); padding:4px 0; }
+  .rl-row { display:flex; align-items:flex-start; gap:7px; padding:5px 10px; border-bottom:1px solid rgba(255,210,74,.08); }
+  .rl-row.done .rl-t { text-decoration:line-through; color:#8b96b8; opacity:.6; }
+  .rl-box { flex:none; width:13px; height:13px; border:1px solid rgba(255,210,74,.5); border-radius:2px; cursor:pointer;
+    text-align:center; line-height:12px; font-size:10px; color:var(--gold); margin-top:1px; }
+  .rl-box.on { background:rgba(255,210,74,.3); }
+  .rl-txt { flex:1; min-width:0; }
+  .rl-t { color:#dfe6ff; }
+  .rl-n { color:#5f6b8d; font-size:9.5px; }
+  .rl-chip { display:inline-block; font-size:8.5px; letter-spacing:1px; border-radius:2px; padding:0 4px; margin-left:6px; vertical-align:1px; }
+  .rl-chip.in { border:1px solid rgba(80,255,160,.5); color:#7bffd4; }
+  .rl-chip.out { border:1px solid rgba(255,210,74,.5); color:var(--gold); }
+  .rl-chip.up { border:1px solid rgba(140,160,255,.5); color:#9fb0ff; }
+  .rl-x { flex:none; cursor:pointer; color:#7a86a6; padding:0 2px; }
+  .rl-x:hover { color:#fff; }
+  .rl-add { display:flex; gap:6px; padding:6px 10px; border-top:1px solid rgba(255,210,74,.2); }
+  .rl-add input { flex:1; background:#0a101c; border:1px solid rgba(255,210,74,.35); color:#dfe6ff; font-family:inherit;
+    font-size:11px; padding:5px 7px; border-radius:3px; outline:none; }
+  .rl-collapsed .rl-body, .rl-collapsed .rl-add { display:none; }
+
+  /* legend collapse */
+  #legend.collapsed { display:none; }
+
+  /* database view */
+  #db { position:fixed; inset:0; z-index:8; display:none; flex-direction:column; gap:10px;
+    padding:64px 18px 18px; overflow:hidden; color:#dfe6ff;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,210,74,.022) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 0%, rgba(70,55,15,.16), transparent 60%),
+      #030509; }
+  #db.on { display:flex; }
+  .db-head { display:flex; align-items:center; gap:14px; border-bottom:1px solid rgba(255,210,74,.35); padding-bottom:10px; }
+  .db-title { color:var(--gold); font-size:14px; letter-spacing:3px; text-shadow:0 0 12px rgba(255,210,74,.5); }
+  .db-sub { color:#8fa0c8; font-size:11px; letter-spacing:1px; flex:1; }
+  .db-sets { display:flex; gap:6px; flex:none; flex-wrap:wrap; }
+  .db-sets .btn { font-size:10px; }
+  .db-bar { display:flex; gap:10px; align-items:center; }
+  #dbSearch { flex:1; background:#0a101c; border:1px solid rgba(255,210,74,.35); color:#dfe6ff;
+    font-family:inherit; font-size:12px; letter-spacing:1px; padding:7px 10px; border-radius:3px; outline:none; }
+  #dbSearch:focus { border-color:var(--gold); box-shadow:0 0 10px rgba(255,210,74,.2); }
+  #dbEarth { background:#0a101c; border:1px solid rgba(255,210,74,.35); color:#dfe6ff; font-family:inherit;
+    font-size:12px; padding:6px 8px; border-radius:3px; }
+  .db-wrap { flex:1; overflow-y:auto; border:1px solid rgba(255,210,74,.22); background:rgba(5,8,14,.6); border-radius:3px; }
+  #dbTable { width:100%; border-collapse:collapse; font-size:11.5px; }
+  #dbTable th { position:sticky; top:0; background:#0b1018; color:var(--gold); letter-spacing:1px;
+    text-align:left; padding:7px 10px; cursor:pointer; border-bottom:1px solid rgba(255,210,74,.4); white-space:nowrap; z-index:1; }
+  #dbTable th:hover { background:#131a28; }
+  #dbTable td { padding:5px 10px; border-bottom:1px solid rgba(255,210,74,.07); color:#c8d3f0; vertical-align:top; }
+  #dbTable tbody tr:nth-child(even) { background:rgba(255,210,74,.025); }
+  #dbTable tbody tr:hover { background:rgba(255,210,74,.09); }
+  #dbTable tbody tr.sel { background:rgba(255,210,74,.16); box-shadow:inset 2px 0 0 var(--gold); }
+  #dbTable .c-case { color:#5f6b8d; white-space:nowrap; }
+  #dbTable .c-title { font-weight:600; color:#eef2ff; }
+  #dbTable .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; box-shadow:0 0 6px currentColor; }
+  #dbTable .nb { color:#6f7fa6; font-size:10.5px; }
+  #dbTable .c-period { white-space:nowrap; color:#ffd274; }
+  .sort-arrow { margin-left:5px; font-size:9px; color:var(--gold); }
+  #dbTable .c-w { text-align:center; }
+  #dbTable .chk { display:inline-block; width:13px; height:13px; border:1px solid rgba(255,210,74,.5); border-radius:2px;
+    cursor:pointer; line-height:12px; text-align:center; font-size:10px; color:var(--gold); vertical-align:middle; }
+  #dbTable .chk.on { background:rgba(255,210,74,.35); }
+  #dbTable tr.w { opacity:.42; }
+  #dbTable tr.w .c-title { color:#8b96b8; }
+  #dbProg { height:3px; background:rgba(255,210,74,.14); }
+  #dbProgFill { display:block; height:100%; width:0%; background:var(--gold); box-shadow:0 0 8px var(--gold); transition:width .25s; }
+  .db-detail { flex:none; border:1px solid rgba(255,210,74,.3); background:rgba(10,15,26,.9); border-radius:3px;
+    padding:10px 14px; font-size:11.5px; max-height:24%; overflow-y:auto; display:none; }
+  .db-detail.on { display:block; }
+  .db-detail .c-title { color:var(--gold); font-size:13px; letter-spacing:1px; }
+  .db-detail .c-line { color:#aeb9de; margin:2px 0; }
+  .db-detail .c-line b { color:#dfe6ff; font-weight:normal; }
+  .db-detail .tag { display:inline-block; border:1px solid rgba(255,210,74,.4); color:var(--gold); border-radius:2px;
+    padding:0 6px; font-size:10px; letter-spacing:1px; margin-bottom:6px; }
+  .db-wrap::-webkit-scrollbar, .db-detail::-webkit-scrollbar { width:6px; }
+  .db-wrap::-webkit-scrollbar-thumb, .db-detail::-webkit-scrollbar-thumb { background:rgba(255,210,74,.3); border-radius:3px; }
+
+  #boot { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:40;
+    color:#8fa0c8; font-size:12px; letter-spacing:2px; text-align:center; }
+  #errBox { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:60;
+    color:#ff6b6b; background:rgba(12,6,10,.92); border:1px solid #ff6b6b; padding:16px 18px;
+    font-size:12px; max-width:74vw; display:none; white-space:pre-wrap; box-shadow:0 6px 30px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="vignette"></div>
+
+<div class="hud panel" id="burger" title="UNIVERSES">
+  <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+</div>
+<div class="hud panel" id="uniMenu"></div>
+<div id="uniShell"></div>
+
+<div class="hud tabs" id="tabbar">
+  <button class="tab act" id="tabLoom" data-tab="loom">LOOM VIEW</button>
+  <button class="tab" id="tabDb" data-tab="db">ENTRY DATABASE</button>
+</div>
+
+<div class="hud panel" id="title">
+  <h1>TVA // MULTIVERSAL TEMPORAL LOOM</h1>
+  <div class="sub" id="subtitle">MARVEL CINEMATIC MULTIVERSE TIMELINE VISUALIZER</div>
+</div>
+
+<div class="hud panel" id="controls">
+  <h2>LOOM CONTROLS</h2>
+  <div class="row"><label>Labels</label><div class="toggle" id="tgLabels"></div></div>
+  <div class="row"><label>Focus</label><div class="toggle" id="tgFocus"></div></div>
+  <div class="row"><label>Animation</label><div class="toggle on" id="tgAnim"></div></div>
+  <div class="row"><label>Speed</label><input type="range" id="speed" min="0" max="200" value="24"></div>
+  <div class="btns" id="qbtns">
+    <button class="btn" id="bShowAll">ALL REALITIES</button>
+    <button class="btn" id="b616">EARTH-616</button>
+    <button class="btn" id="bLegend">REALITIES ▸</button>
+  </div>
+  <div id="scrubWrap">
+    <div class="row"><label>Time flow</label><input type="range" id="scrub" min="0" max="1000" value="1000"></div>
+    <div class="row" style="justify-content:space-between">
+      <button class="btn" id="bPlay">PLAY</button>
+      <span id="scrubLabel">ALL TEMPORAL POINTS</span>
+    </div>
+  </div>
+</div>
+
+<div class="hud panel collapsed" id="legend"><h2>REALITIES</h2><div id="leglist"></div></div>
+
+<div class="hud panel" id="card"></div>
+<div class="hud" id="help">DRAG: ORBIT &nbsp;&bull;&nbsp; RIGHT-DRAG: PAN &nbsp;&bull;&nbsp; SCROLL: ZOOM &nbsp;&bull;&nbsp; DBL-CLICK: FLY TO POINT</div>
+<div class="hud panel" id="doom">
+  <h2>DOOMSDAY CLOCK</h2>
+  <div class="doom-d">AVENGERS: DOOMSDAY — RELEASES 18.12.2026</div>
+  <div class="doom-t" id="doomTick">--:--:--:--</div>
+  <div class="doom-s" id="doomSub">T-MINUS COUNTDOWN</div>
+</div>
+
+<div id="db">
+  <div class="db-head">
+    <span class="db-title">TVA // TEMPORAL ENTRY DATABASE</span>
+    <span class="db-sub" id="dbCount"></span>
+    <div class="db-sets" id="dbSets"></div>
+    <button class="btn" id="dbPrint">PRINT</button>
+    <button class="btn" id="dbArchive">ARCHIVE</button>
+  </div>
+  <div class="db-bar">
+    <input type="text" id="dbSearch" placeholder="SEARCH: TITLE, REALITY, NOTE...">
+    <select id="dbEarth"></select>
+    <button class="btn" id="dbReset">RESET</button>
+    <button class="btn" id="dbWf">WATCHED ONLY</button>
+  </div>
+  <div id="dbProg"><span id="dbProgFill"></span></div>
+  <div class="db-wrap">
+    <table id="dbTable">
+      <thead><tr>
+        <th data-k="case">CASE#</th>
+        <th data-k="watched">WATCH</th>
+        <th data-k="title">TITLE</th>
+        <th data-k="base">REALITY</th>
+        <th data-k="season">SEASON</th>
+        <th data-k="episodes">EPISODES</th>
+        <th data-k="year">TIME PERIOD</th>
+      </tr></thead>
+      <tbody id="dbBody"></tbody>
+    </table>
+  </div>
+  <div class="db-detail" id="dbDetail"></div>
+  <div class="rl-panel" id="rlPanel">
+    <div class="rl-head" id="rlHead">RELEASE QUEUE // TO BE ADDED <span class="rl-count" id="rlCount"></span></div>
+    <div class="rl-body" id="rlBody"></div>
+    <div class="rl-add"><input type="text" id="rlAdd" placeholder="ADD ITEM..."><button class="btn" id="rlAddBtn">ADD</button></div>
+  </div>
+</div>
+
+<div id="boot">TVA // INITIALIZING TEMPORAL LOOM</div>
+<div id="errBox"></div>
+
+<script src="three.min.js" onerror="this.onerror=null;(function(){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';document.head.appendChild(s);})()"></script>
+<script>
+(function () {
+  'use strict';
+  var bootEl = document.getElementById('boot');
+  var errBox = document.getElementById('errBox');
+  function showErr(msg) {
+    if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; }
+    if (bootEl) bootEl.style.display = 'none';
+  }
+  window.addEventListener('error', function (ev) { showErr('RUNTIME ERROR:\n' + (ev.message || ev.error || '')); });
+
+  function startApp() {
+
+  // ---------------------------------------------------------------- data
+  var CSV = [
+"Title,Earth,Season,Episodes,TimePeriod",
+"Eyes of Wakanda,Earth-616,Season 1,Episode 2,1200BC",
+"Eyes of Wakanda,Earth-616,Season 1,Episode 1,1260 BC",
+"Eyes of Wakanda,Earth-616,Season 1,Episode 3,1400 AD",
+"Eyes of Wakanda,Earth-616,Season 1,Episode 4,1896 AD",
+"Captain America: The First Avenger,Earth-616,N/A,N/A,03/1942-03/1945",
+"Marvel One Shot: Agent Carter,Earth-616,N/A,N/A,03/1946",
+"Agent Carter,Earth-616,Season 1,Episode 1-8,04/1946-05/1946",
+"Agent Carter,Earth-616,Season 2,Episode 1-10,07/1947",
+"X-Men: First Class,Earth-10005,N/A,N/A,10/1962-11/1962",
+"X-Men Origins: Wolverine,Earth-10005,N/A,N/A,03/1979",
+"Blade,Earth-26320,N/A,N/A,1998",
+"Spider-Man,Earth-96283,N/A,N/A,04/2002-12/2002",
+"Blade II,Earth-26320,N/A,N/A,2002",
+"DareDevil,Earth-703006,N/A,N/A,02/2003",
+"Spider-Man 2,Earth-96283,N/A,N/A,04/2004",
+"The Punisher,,N/A,N/A,2004",
+"Blade Trinity,Earth-26320,N/A,N/A,2004",
+"Elektra,Earth-703006,N/A,N/A,01/2005",
+"X-Men,Earth-10005,N/A,N/A,01/2005",
+"The Fantastic Four,Earth-121698,N/A,N/A,06/2005",
+"X2: X-Men United,Earth-10005,N/A,N/A,03/2006",
+"X-Men: The Last Stand,Earth-10005,N/A,N/A,05/2006",
+"Spider-Man 3,Earth-96283,N/A,N/A,07/2007",
+"The Fantastic Four: Rise of the Silver Surfer,Earth-121698,N/A,N/A,2007",
+"Iron Man,Earth-616,N/A,N/A,02/2008-05/2008",
+"The Incredible Hulk,Earth-616,N/A,N/A,04/2010-07/2010",
+"Iron Man 2,Earth-616,N/A,N/A,05/2010-06/2010",
+"Marvel One Shot: A Funny Thing Happened On the Way to Thors Hammer,Earth-616,N/A,N/A,05/2010",
+"Thor,Earth-616,N/A,N/A,05/2010-06/2010",
+"Marvel One Shot: The Consultant,Earth-616,N/A,N/A,07/2010",
+"Avengers: Assemble,Earth-616,N/A,N/A,05/2012",
+"Marvel One Shot: Item 47,Earth-616,N/A,N/A,05/2012",
+"The Amazing Spider-Man,Earth-120703,N/A,N/A,01/2013-04/2013",
+"The Wolverine,Earth-10005,N/A,N/A,2013",
+"Thor: The Dark World,Earth-616,N/A,N/A,05/2012-11/2013",
+"Agents of Shield,Earth-TRN676,Season 1,Ep:1-7,09/2013-12/2013",
+"Iron Man 3,Earth-616,N/A,N/A,12/2013-01/2014",
+"Marvel One Shot: Hail to the King,Earth-616,N/A,N/A,02/2014",
+"Agents of Shield,Earth-TRN676,Season 1,Ep:8-15,12/2013-02/2014",
+"Captain America: The Winter Soldier,Earth-616,N/A,N/A,03/2014",
+"Agents of Shield,Earth-TRN676,Season 1,Ep:16-22,03/2014",
+"The Amazing Spider-Man 2,Earth-120703,N/A,N/A,06/2014-03/2015",
+"Guardians of the Galaxy: Vol 1,Earth-616,N/A,N/A,08/2014",
+"I am Groot,Earth-616,Season 1 & 2,N/A,09/2014",
+"Guardians of the Galaxy: Vol 2,Earth-616,N/A,N/A,10/2014",
+"DareDevil,Earth-11584,Season 1,N/A,01/2015-02/2015",
+"Agents of Shield,Earth-TRN676,Season 2,Ep:1-19,01/2015-03/2015",
+"The Fantastic Four,Earth-10005,N/A,N/A,2015",
+"Jessica Jones,Earth-11584,Season 1,N/A,03/2015-04/2015",
+"Avengers: Age of Ultron,Earth-616,N/A,N/A,04/2015-05/2015",
+"Agents of Shield,Earth-TRN676,Season 2,Ep:20-22,05/2015",
+"Luke Cage,Earth-11584,Season 1,N/A,11/2015-12/2015",
+"DareDevil,Earth-11584,Season 2,N/A,10/2015-12/2015",
+"Deadpool,Earth-TRN414,N/A,N/A,06/2015-02/2016",
+"WHIH Newsfront,Earth-616,Season 1,Episode: 1-5,07/2015",
+"Ant-Man,Earth-616,N/A,N/A,07/2015-08/2015",
+"Agents of Shield,Earth-TRN676,Season 3,Ep:1-19,11/2015-06/2016",
+"Iron Fist,Earth-11584,Season 1,N/A,02/2016-03/2016",
+"Marvels Most Wanted,Earth-TRN676,N/A,N/A,2016",
+"Your Friendly Neighborhood Spider-Man,Earth 616 - Adjacent,Season 1,Ep: 1-3,05/2016",
+"Captain America: Civil War,Earth-616,N/A,N/A,05/2016-06/2016",
+"Doctor Strange,Earth-616,N/A,N/A,05/2016-01/2017",
+"Your Friendly Neighborhood Spider-Man,Earth 616 - Adjacent,Season 1,Ep: 4,05/2016",
+"Black Widow,Earth-616,N/A,N/A,06/2016",
+"Your Friendly Neighborhood Spider-Man,Earth 616 - Adjacent,Season 1,Ep: 5-10,06/2016",
+"Team Thor,Earth-616,N/A,N/A,06/2016",
+"Team Thor: Part 2,Earth-616,N/A,N/A,06/2016",
+"Marvel: Defenders,Earth-11584,Season 1,N/A,05/2016",
+"Agents of Shield,Earth-TRN676,Season 3,Ep:20-22,06/2016-12/2016",
+"Spider-Man: Homecoming,Earth-616,N/A,N/A,06/2016-09/2016",
+"Black Panther,Earth-616,N/A,N/A,06/2016",
+"Agents of Shield,Earth-TRN676,Season 4,Ep:1-15,08/2016-09/2016",
+"The Punisher,Earth-11584,Season 1,N/A,11/2016-12/2016",
+"Inhumans,Earth-TRN676,Season 1,N/A,08/2016",
+"Agents of Shield:Slingshot,Earth-TRN676,Season 1,N/A,09/2016-03/2017",
+"Cloak and Dagger,Earth-616,Season 1,N/A,02/2017",
+"Agents of Shield,Earth-TRN676,Season 4,Ep:16-22,03/2017-05/2017",
+"Jessica Jones,Earth-15584,Season 2,N/A,04/2017-06/2017",
+"Luke Cage,Earth-11584,Season 2,N/A,08/2017-09/2017",
+"New Mutants,Earth-TRN414,N/A,N/A,10/2017",
+"Cloak and Dagger,Earth-616,Season 2,N/A,10/2017-12/2017",
+"Thor: Ragnarok,Earth-616,N/A,N/A,11/2017",
+"Runaways,Earth-616,Season 1,N/A,12/2017",
+"Agents of Sheild,Earth-TRN676,Season 5,Episodes: 5-4,12/2091",
+"Agents of Sheild,Earth-TRN676,Season 5,Episodes: 6-10,12/2091",
+"Agents of Sheild,TRN676 Transported to Earth-616,Season 5,Episodes: 11-13,12/2017",
+"Runaways,Earth-616,Season 2,N/A,12/2017-02/2018",
+"Runaways,Earth-616,Season 3,Episodes: 1-4,12/2017",
+"The Punisher,Earth-11584,Season 2,N/A,04/2018-05/2018",
+"Iron Fist,Earth-11584,Season 2,N/A,2018",
+"DareDevil,Earth-11584,Season 3,N/A,2018",
+"Ant-Man and the Wasp,Earth-616,N/A,N/A,04/2018-05/2018",
+"Jessica Jones,Earth-11584,Season 3,N/A,04/2018-05/2018",
+"Agents of Sheild,TRN676 Transported to Earth-616,Season 5,Episodes: 14-18,05/2018",
+"Avengers: Infinity War,Earth-616,N/A,N/A,05/2018",
+"What If..?,Earth-89521,Season 1,Episode 5,05/2018",
+"Marvel Zombies,Earth-89521,Season 1,Episodes 1-4,06/2018",
+"Captain Marvel,Earth-616,N/A,N/A,06/1995",
+"Agents of Sheild,TRN676 Transported to Earth-616,Season 5,Episodes:19-22,05/2018",
+"Runaways,Earth-616,Season 3,Episodes:5-10,08/2018",
+"Agents of Sheild,TRN676 Transported to Earth-616,Season 6,Episodes-1-13,06/2019-07/2019",
+"Agents of Sheild,TRN810,Season 7,Episodes:1-13,02/1931-11/1983",
+"Deadpool and Wolverine,Earth-TRN414 The Void at The End of Time,N/A,N/A,2019 Time Travelled to 2029,2018",
+"Spider-Man,1048,PS4,,10/2018-01/2019",
+"Venom,Earth-688,N/A,N/A,10/2018-04/2019",
+"Spider-Man: The City That Never Sleeps,1048,PS4,,01/2019",
+"Spider-Man: Into the Spider-Verse,Earth-1610,N/A,N/A,12/2018",
+"X-Men: Days of Future Past,Earth-10005 Rebooted to Earth-TRN414,N/A,N/A,2023",
+"Vemon 2,Earth-688,N/A,N/A,2018",
+"The Daily Bugle,Earth-688B,Season 3,Episodes:1-4,05/2019-06/2019",
+"X-Men: Apocalypse,Earth-TRN414,N/A,N/A,01/1983-02/1983",
+"Spider-Man: Miles Morales,1048,PS4,,12/2019-01/2020",
+"Spider-Man: Across the Spider-Verse,Earth-1610,N/A,N/A,04/2020",
+"Spider-Man 2,1048,PS5,,10/2020",
+"X-Men: Dark Phoenix,Earth-TRN414,N/A,N/A,6/1985",
+"Logan,Earth-17315,N/A,N/A,2029",
+"Avengers: Endgame,Earth-616,N/A,N/A,10/2020",
+"Loki,Temporal Realm,Season 1,N/A,N/A",
+"WandaVision,Earth-616,Season 1,N/A,11/2023",
+"The Falcon and the Winter Soilder,Earth-616,Season 1,Ep:1-5,04/2024",
+"Shang-Chi: The Legends of the Ten Rings,Earth-616,N/A,N/A,03/2024-04/2024",
+"The Daily Bugle,Earth-616,Season 1,Episode: 1-9,07/2024",
+"Kraven The Hunter,Earth-688,N/A,N/A,2024",
+"Spider-Man: Far From Home,Earth-616,N/A,N/A,07/2024",
+"Spider-Man No Way Home,Earth-616,N/A,N/A,07/2024-12/2024",
+"Morbius,Earth-688B,N/A,N/A,06/2019",
+"Vemon 3,Earth-688,N/A,N/A,07/2019",
+"The Falcon and the Winter Soilder,Earth-616,Season 1,Ep: 6,07/2024",
+"Etnernals,Earth-616,N/A,N/A,10/2024",
+"The Daily Bugle,Earth-616,Season 2,Episode: 1-13,11/2024",
+"She-Hulk: Attorney at Law,Earth-616,Season 1,Ep: 1,11/2024",
+"Doctor Strange: in the Multiverse of Madness,Earth-616 Transported to Earth-838,N/A,N/A,11/2024",
+"What If..?,Nexus of All Realities,Season 1,Episode 9,N/A",
+"Hawkeye,Earth-616,Season 1,N/A,12/2024",
+"She Hulk: Attorney at Law,Earth-616,Season 1,Ep: 2-3,05/2025",
+"Moon Knight,Earth-616,Season 1,N/A,04/2025-05/2025",
+"Black Panther: Wakanda Forever,Earth-616,N/A,N/A,05/2025",
+"Echo,Earth-616,Season 1,N/A,05/2025-06/2025",
+"She-Hulk: Attorney at Law,Earth-616,Season 1,Ep:4-8,09/2025",
+"IronHeart,Earth-616,Season 1,Epiosde 1-6,Fall 2025",
+"She-Hulk: Attorney at Law,Earth-616,Season 1,Ep: 9,Fall 2025",
+"Ms.Marvel,Earth-616,Season 1,Ep: 1-8,09/2025-10/2025",
+"Thor: Love and Thunder,Earth-616,N/A,N/A,Fall 2025",
+"Iron Heart,Earth-616,Season 1,Ep:1-8,10/2025",
+"Werewolf by Night,Earth-616,N/A,N/A,10/2025",
+"Guardians of the Galaxy: Christmas Special,Earth-616,N/A,N/A,12/2025",
+"DareDevil: Born Again,Earth-616,Season 1,Ep:1-9,1/2026",
+"Agatha All Along,Earth-616,Season 1,Ep:1-8,Spring 2026",
+"Ant-Man and the Wasp: Quantummania,Earth-616 Transported into the Quantum Realm,N/A,N/A,07/2026",
+"DareDevil: Born Again,Earth-616,Season 2,Ep:1-8,8/2026",
+"Loki,Temporal Loom,Season 2,Ep:1-8,N/A",
+"Deadpool and Wolverine,Earth-10005 The Void at The End of Time,N/A,N/A,2019 Time Travelled to 2029,2018",
+"The Punisher: One Last Kill,Earth-616,N/A,N/A,",
+"Guardians of the Galaxy: Vol 3,Earth-616,N/A,N/A,08/2026",
+"The Marvels,Earth-616 Transported to Earth-TRN414,N/A,N/A,11/2026",
+"Secret Invasion,Earth-616,Season 1,Ep: 1-8,10/2026-11/2026",
+"Captain America: New World Order,Earth-616,N/A,N/A,04/2027",
+"Wonder-Man,Earth-616,Season 1,Ep:1-8,4/2027",
+"Fantastic Four: First Steps,Earth-828,N/A,N/A,5/1968",
+"Thunderbolts*,Earth-616,N/A,N/A,9/2027",
+"Spider-Man: Brand New Day,Earth-616,,,07/2028",
+"What If..?,Nexus of All Realities,Season 2,Episode 9,N/A",
+"Avengers: Doomsday,Earth-616,N/A,N/A,11/2028"
+  ].join("\n");
+
+  var CSV_90S = [
+"Title,Earth,Season,Episodes,TimePeriod",
+"X-Men Animated Series,Earth-92131,Season 1,Episode 1-13,04/1991-10/1992",
+"X-Men Animated Series,Earth-92131,Season 2,Episode 1-13,Spring 1992",
+"Spider-Man Animated Series,Earth-92131,Season 1,Episode 1-13,08/1994 - 03/1995",
+"X-Men Animated Series,Earth-92131,Season 3,Episode 1-19,08/1994 - 03/1995",
+"Spider-Man Animated Series,Earth-92131,Season 2,Episode 1-14,03/1995-04/1995",
+"Spider-Man Animated Series,Earth-92131,Season 3,Episode 1-14,04/1995-06/1995",
+"Spider-Man Animated Series,Earth-92131,Season 4,Episode 1-11,06/1995-11/1995",
+"X-Men Animated Series,Earth-92131,Season 4,Episode 1-21,03/1995-01/1996",
+"Spider-Man Animated Series,Earth-92131,Season 5,Episode 1-13,11/1996-12/1996",
+"X-Men Animated Series,Earth-92131,Season 5,Episode 1-10,02/1996-11/1996",
+"X-Men '97,Earth-92131,Season 1,Episode 1-10,09/1997-05/1998",
+"X-Men '97,Earth-92131,Season 2,,"
+  ].join("\n");
+  var CSV_2010S = [
+"Title,Earth,Season,Episodes,TimePeriod",
+"Ultimate Spider-Man,Earth-12041,Season 1,Episode 1-26,8/2010-03/2012",
+"Ultimate Spider-Man,Earth-12041,Season 2,Episode 1-14,04/2012",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 1-3,05/2012",
+"Ultimate Spider-Man,Earth-12041,Season 2,Episode 15-17,05/2012-06/2012",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 4-8,06/2012-07/2012",
+"Ultimate Spider-Man,Earth-12041,Season 2,Episode 18-20,07/2012",
+"Avengers Assemble,Earth-12041,Season 1,Episode 1-4,08/2012",
+"Ultimate Spider-Man,Earth-12041,Season 2,Episode 21-24,08/2012",
+"Avengers Assemble,Earth-12041,Season 1,Episode 18,08/2012",
+"Ultimate Spider-Man,Earth-12041,Season 2,Episode 25-26,31/11/12-01/11/12",
+"Avengers Assemble,Earth-12041,Season 1,Episode 5-8,11/2012",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 9,11/2012",
+"Avengers Assemble,Earth-12041,Season 1,Episode 9-13,11/2012",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 10-14,11/2012",
+"Avengers Assemble,Earth-12041,Season 1,Episode 14,12/2012",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 21,25/12/2012",
+"Avengers Assemble,Earth-12041,Season 1,Episode 15-23,01/2013-03/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 15,03/2013",
+"Avengers Assemble,Earth-12041,Season 1,Episode 24,03/2013",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 1-12,04/2013",
+"Avengers Assemble,Earth-12041,Season 1,Episode 25-26,04/2013",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 13-15,4/2013-05/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 16-18,06/2013",
+"Avengers Assemble,Earth-12041,Season 2,Episode 1-19,06/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 19-22,07/2013",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 16-17,11/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 23,07/2013",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 18-20,07/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 1,Episode 24-26,7/2013-08/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 2,Episode 1-9,08/2013-01/11/2013",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 21,31/10/2013",
+"Hulk and the Agents of S.M.A.S.H.,Earth-12041,Season 2,Episode 10-15,",
+"Ultimate Spider-Man,Earth-12041,Season 3,Episode 22,25/12/2013",
+"Avengers Assemble,Earth-12041,Season 2,Episode 20-24,"
+  ].join("\n");
+
+  var CSV_UNIKEYS = [
+"Title,Earth,Season,Episodes,TimePeriod",
+"Spider-Man: Unlimited,Earth-751263,N/A,N/A,N/A",
+"Daredevil (2003),Earth-703006,N/A,N/A,N/A",
+"MCU (Sacred Timeline),Earth-199999 (Earth-616),N/A,N/A,N/A",
+"Fantastic Four (2005),Earth-121698,N/A,N/A,N/A",
+"The Amazing Spider-Man,Earth-120703,N/A,N/A,N/A",
+"Fox X-Men Universe,Earth-10005,N/A,N/A,N/A",
+"Raimi Spider-Man,Earth-96283,N/A,N/A,N/A",
+"90's Animated Universe,Earth-92131,N/A,N/A,N/A",
+"Corrupted Strange,Earth-91233,N/A,N/A,N/A",
+"Spider-Noir,Earth-90214,N/A,N/A,N/A",
+"Marvel Zombies,Earth-89521,N/A,N/A,N/A",
+"Captain Carter,Earth-82111,N/A,N/A,N/A",
+"Thor Only Child,Earth-72124,N/A,N/A,N/A",
+"Avengers Died,Earth-51825,N/A,N/A,N/A",
+"Spider-Man India,Earth-50101,N/A,N/A,N/A",
+"Killmonger Saves Iron Man,Earth-32938,N/A,N/A,N/A",
+"Infinity Ultron,Earth-29929,N/A,N/A,N/A",
+"Spectacular Spider-Man,Earth-26496,N/A,N/A,N/A",
+"Blade,Earth-26320,N/A,N/A,N/A",
+"T'Challa Becomes Star-Lord,Earth-21818,N/A,N/A,N/A",
+"2015-20 Animated Universe,Earth-17628,N/A,N/A,N/A",
+"Peni Parker / SP//dr,Earth-14512,N/A,N/A,N/A",
+"Lego Spider-Man,Earth-13122,N/A,N/A,N/A",
+"Ultimate Spider-Man (2012-18),Earth-12041,N/A,N/A,N/A",
+"Defenders Universe,Earth-11584,N/A,N/A,N/A",
+"Earth's Mightiest Heroes,Earth-8096,N/A,N/A,N/A",
+"Spider-Ham,Earth-8311,N/A,N/A,N/A",
+"Ultimate Comics,Earth-6160,N/A,N/A,N/A",
+"Ultimate Comics (2000),Earth-1610 (Destroyed),N/A,N/A,N/A",
+"Miles Morales (Spider-Verse),Earth-1610,N/A,N/A,N/A",
+"M.O.D.O.K.,Earth-1226,N/A,N/A,N/A",
+"Steve Ditko Universe,Earth-1161,N/A,N/A,N/A",
+"Insomniac Spider-Man,Earth-1048,N/A,N/A,N/A",
+"Miguel O'Hara (Original),Earth-928 (Alternative),N/A,N/A,N/A",
+"Spider-Society,Earth-928,N/A,N/A,N/A",
+"Illuminati,Earth-838,N/A,N/A,N/A",
+"Kirby Universe,Earth-828,N/A,N/A,N/A",
+"Sony's Spider-Man Universe,Earth-688,N/A,N/A,N/A",
+"Madame Web,Earth-688B,N/A,N/A,N/A",
+"Peter B. Parker,Earth-616,N/A,N/A,N/A",
+"Jessica Drew / Spider-Woman,Earth-332,N/A,N/A,N/A",
+"Hobie Brown / Spider-Punk,Earth-138,N/A,N/A,N/A",
+"Ben Reilly / Scarlet Spider,Earth-94,N/A,N/A,N/A",
+"1967 Spider-Man,Earth-67,N/A,N/A,N/A",
+"Spider-Rex,Earth-66,N/A,N/A,N/A",
+"Spider-Gwen,Earth-65,N/A,N/A,N/A",
+"Miles Original Spider,Earth-42,N/A,N/A,N/A",
+"TASM Alternative,Earth-ASM 90,N/A,N/A,N/A",
+"Agents of Shield S7,Earth-TRN810,N/A,N/A,N/A",
+"Agents of Shield,Earth-TRN676,N/A,N/A,N/A",
+"Nebula Joins Nova Corps,Earth-TRN1088,N/A,N/A,N/A",
+"Peter Quill vs Mightiest Heroes,Earth-TRN1089,N/A,N/A,N/A",
+"Happy Saved Christmas,Earth-TRN1090,N/A,N/A,N/A",
+"Kahhori Reshaped the World,Earth-TRN1091,N/A,N/A,N/A",
+"Hela Found the Ten Rings,Earth-TRN1092,N/A,N/A,N/A",
+"Avengers Assembled in 1602,Earth-TRN1093,N/A,N/A,N/A",
+"Iron Man Crashed Into Grandmaster,Earth-TRN905,N/A,N/A,N/A",
+"Fox Universe (Rebooted),Earth-TRN414,N/A,N/A,N/A",
+"Spider-Byte,Earth-22191,N/A,N/A,N/A",
+"Peter Parkedcar,Earth-53931,N/A,N/A,N/A",
+"Cosmic Spider-Man,Earth-13,N/A,N/A,N/A",
+"Cyborg Spider-Man,Earth-2818,N/A,N/A,N/A",
+"Lady Spider,Earth-15011,N/A,N/A,N/A",
+"Web-Slinger,Earth-31913,N/A,N/A,N/A",
+"Spider-Wolf,Earth-13989,N/A,N/A,N/A",
+"Spider-Man 2211,Earth-9500,N/A,N/A,N/A",
+"Spider-UK,Earth-834,N/A,N/A,N/A",
+"Sun-Spider,Earth-20023,N/A,N/A,N/A",
+"Supaidaman / Japanese Spider-Man,Earth-51778,N/A,N/A,N/A"
+  ].join("\n");
+
+  function splitRow(line) {
+    var p = line.split(',');
+    if (p.length > 5) { p[4] = p.slice(4).join(','); p.length = 5; }
+    return p.map(function (x) { return x.trim(); });
+  }
+
+  var RAW = CSV.trim().split(/\r?\n/).slice(1).map(function (r) {
+    var c = splitRow(r);
+    return { title: c[0], universe: c[1], season: c[2], episodes: c[3], period: c[4] || '' };
+  });
+
+  function splitNote(u) {
+    if (!u) return { base: '', note: '' };
+    var m = u.match(/\s+(Transport[^]*|The Void[^]*|Reboot[^]*|Time Travell[^]*|Quantum[^]*)/i);
+    if (m) return { base: u.slice(0, m.index).trim(), note: m[1].trim() };
+    return { base: u, note: '' };
+  }
+
+  function parseYears(str) {
+    if (!str) return null;
+    var s = str.toLowerCase();
+    var yrs = new Set();
+    var bn = s.match(/\d{1,4}\s*(bc|ad)\b/gi);
+    if (bn) { for (var i = 0; i < bn.length; i++) { var m = bn[i].match(/(\d{1,4})\s*(bc|ad)/i); var y = +m[1]; if (/bc/.test(m[2])) y = -y; yrs.add(y); } }
+    var dy = s.match(/\b(19|20)\d{2}\b/g);
+    if (dy) { for (var j = 0; j < dy.length; j++) yrs.add(+dy[j]); }
+    var sf = s.match(/\b(winter|spring|summer|fall)\s*(\d{1,4})\b/);
+    if (sf) { var off = { winter: 1, spring: 4, summer: 7, fall: 10 }; yrs.add(+sf[2] + off[sf[1]] / 12); }
+    if (!yrs.size) { var o = s.match(/\b(1[5-9]\d{2})\b/g); if (o) { for (var k = 0; k < o.length; k++) yrs.add(+o[k]); } }
+    if (!yrs.size) { var o2 = s.match(/\b\d{4}\b/g); if (o2) { for (var l = 0; l < o2.length; l++) yrs.add(+o2[l]); } }
+    if (!yrs.size) return null;
+    var arr = []; yrs.forEach(function (v) { arr.push(v); });
+    var mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr);
+    return { min: mn, max: mx, mid: (mn + mx) / 2 };
+  }
+
+  var entries = RAW.map(function (r, i) {
+    var sn = splitNote(r.universe);
+    var py = parseYears(r.period);
+    var jumpTxt = (r.universe + ' ' + r.period).toLowerCase();
+    var zig = /transport|the void|reboot|time travell|quantum realm/.test(jumpTxt);
+    return { i: i, wkey: String(i), title: r.title, universe: r.universe, season: r.season, episodes: r.episodes,
+      period: r.period, base: sn.base, note: sn.note, year: py ? py.mid : null, yMin: py ? py.min : null,
+      zig: zig || !py, loom: true };
+  });
+
+  function buildDataSet(csv, prefix) {
+    return csv.trim().split(/\r?\n/).slice(1).map(function (r) {
+      var c = splitRow(r);
+      return { title: c[0], universe: c[1], season: c[2], episodes: c[3], period: c[4] || '' };
+    }).map(function (r, i) {
+      var sn = splitNote(r.universe);
+      var py = parseYears(r.period);
+      return { i: i, wkey: prefix + i, title: r.title, universe: r.universe, season: r.season, episodes: r.episodes,
+        period: r.period, base: sn.base, note: sn.note, year: py ? py.mid : null, yMin: py ? py.min : null, loom: false };
+    });
+  }
+  var entries90 = buildDataSet(CSV_90S, '90s:');
+  var entries10 = buildDataSet(CSV_2010S, '10s:');
+  var entriesUni = buildDataSet(CSV_UNIKEYS, 'uni:');
+  var DATASETS = { main: entries, '90s': entries90, '2010s': entries10, 'uni': entriesUni };
+  var DBSET_KEYS = ['main', '90s', '2010s', 'uni'];
+
+  // ----------------------------------------------------------- time mapping
+  var MOD0 = 1900, K = 1.3;
+  function yearToX(y) {
+    if (y >= MOD0 && y < 2033) return (y - MOD0) * K;
+    if (y < MOD0) return (y - MOD0) * K * 0.045;
+    return (2033 - MOD0) * K + (y - 2033) * K * 0.15;
+  }
+  var dated = entries.filter(function (e) { return e.year !== null; });
+  var undated = entries.filter(function (e) { return e.year === null; });
+  var minX = Infinity, maxDX = -Infinity;
+  dated.forEach(function (e) { e.x0 = yearToX(e.year); if (e.x0 < minX) minX = e.x0; if (e.x0 > maxDX) maxDX = e.x0; });
+  undated.forEach(function (e, i) { e.x0 = maxDX + 34 + i * 11; });
+  var trunkMin = Math.min(minX, -220) - 20;
+  var trunkMax = maxDX + 170;
+  var spanX = trunkMax - trunkMin;
+
+  // ------------------------------------------------------------ colors
+  var COLOR_OVERRIDES = {
+    'Earth-616': '#ffd24a', 'Earth 616 - Adjacent': '#ffdd77',
+    'Earth-10005': '#39c7ff', 'Earth-11584': '#ff5ec4', 'Earth-15584': '#ff5ec4',
+    'Earth-TRN676': '#ff9a3c', 'TRN676': '#ff9a3c', 'Earth-TRN414': '#ff3b3b', 'TRN414': '#ff3b3b',
+    'Earth-688': '#3bff8f', 'Earth-688B': '#7bff5e',
+    'Earth-89521': '#b66bff', 'Earth-1610': '#ff5b7f', 'Earth-96283': '#8f9bff',
+    'Earth-120703': '#ffda3c', 'Earth-121698': '#5ec9ff', 'Earth-26320': '#c17fff',
+    'Earth-17315': '#d6d6d6', 'Earth-703006': '#5effc9', 'Earth-828': '#ffb45e',
+    '1048': '#39ff8f', 'TRN810': '#8f8fff', 'Nexus of All Realities': '#e6f2ff',
+    'Temporal Realm': '#ffffff', 'Temporal Loom': '#ffffff', '': '#8a8a8a',
+    'Earth-12041': '#6bd5ff', 'Earth-92131': '#ff9c3c'
+  };
+  function earthColor(base) {
+    if (COLOR_OVERRIDES.hasOwnProperty(base)) return COLOR_OVERRIDES[base];
+    var h = 0;
+    for (var i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) >>> 0;
+    return 'hsl(' + (h % 360) + ',70%,62%)';
+  }
+  var earths = [];
+  entries.forEach(function (e) { if (earths.indexOf(e.base) < 0) earths.push(e.base); });
+  earths.sort();
+  var Nl = earths.length;
+  entries.forEach(function (e) {
+    var li = earths.indexOf(e.base);
+    var frac = (li + 0.5) / Nl;
+    var jitter = ((e.i * 37) % 13) / 13 - 0.5;
+    e.theta = frac * Math.PI * 0.86 + 0.06 + jitter * 0.05;
+    e.phi = frac * Math.PI * 0.5 - Math.PI * 0.22 + jitter * 0.04;
+    e.L = 46 + (li % 5) * 5 + ((e.i * 11) % 9) * 0.5;
+    e.color = earthColor(e.base);
+  });
+
+  // ------------------------------------------------------------ three setup
+  var app = document.getElementById('app');
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  } catch (err) {
+    app.innerHTML = '<div style="color:#ffd24a;padding:30px;font-family:monospace">WEBGL UNAVAILABLE</div>';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  app.appendChild(renderer.domElement);
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x05060a);
+  scene.fog = new THREE.Fog(0x05060a, 1100, 2000);
+  var camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 4000);
+  var UP = new THREE.Vector3(0, 1, 0);
+
+  function hexRgba(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function radialTexture(hex) {
+    var c = document.createElement('canvas'); c.width = c.height = 256;
+    var g = c.getContext('2d');
+    var grad = g.createRadialGradient(128, 128, 3, 128, 128, 128);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.2, hexRgba(hex, 0.8));
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  }
+
+  class PolyCurve extends THREE.Curve {
+    constructor(pts) {
+      super();
+      this.pts = pts;
+      this.lens = [0]; var acc = 0;
+      for (var i = 1; i < pts.length; i++) { acc += pts[i].distanceTo(pts[i - 1]); this.lens.push(acc); }
+      this.total = acc;
+    }
+    getPoint(t, target) {
+      target = target || new THREE.Vector3();
+      var d = t * this.total;
+      var i = 1;
+      while (i < this.pts.length - 1 && this.lens[i] < d) i++;
+      var a = this.pts[i - 1], b = this.pts[i];
+      var seg = this.lens[i] - this.lens[i - 1] || 1;
+      return target.copy(a).lerp(b, (d - this.lens[i - 1]) / seg);
+    }
+  }
+
+  class TwistCurve extends THREE.Curve {
+    constructor(base, rad, twists, phase) {
+      super();
+      this.base = base; this.r = rad; this.tw = twists; this.ph = phase;
+    }
+    getPoint(t, target) {
+      target = target || new THREE.Vector3();
+      var p = this.base.getPoint(t);
+      var tan = this.base.getTangent(t).normalize();
+      var n = new THREE.Vector3().crossVectors(tan, UP);
+      if (n.lengthSq() < 1e-6) n.set(1, 0, 0); else n.normalize();
+      var b = new THREE.Vector3().crossVectors(tan, n).normalize();
+      var a = t * this.tw * Math.PI * 2 + this.ph;
+      return target.copy(p)
+        .addScaledVector(n, Math.cos(a) * this.r)
+        .addScaledVector(b, Math.sin(a) * this.r);
+    }
+  }
+
+  // stars
+  var starGeo = new THREE.BufferGeometry();
+  var NSTARS = 1500, sp = new Float32Array(NSTARS * 3);
+  for (var si = 0; si < NSTARS; si++) {
+    var rr = 950 + Math.random() * 700;
+    var tha = Math.acos(2 * Math.random() - 1), phi = Math.random() * Math.PI * 2;
+    sp[si * 3] = rr * Math.sin(tha) * Math.cos(phi);
+    sp[si * 3 + 1] = rr * Math.cos(tha) * 0.8;
+    sp[si * 3 + 2] = rr * Math.sin(tha) * Math.sin(phi);
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xa9c1f0, size: 1.5, transparent: true, opacity: 0.85, sizeAttenuation: true, depthWrite: false, fog: false });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // nebulae
+  var nebCols = ['#3a2f7a', '#4a2f8a', '#1b3a6b', '#6a3a1b', '#2f6b5a', '#ffb35a'];
+  for (var ni = 0; ni < 10; ni++) {
+    var np = new THREE.Vector3();
+    np.set((Math.random() - 0.5) * 1900, (Math.random() - 0.5) * 1200, (Math.random() - 0.5) * 1900);
+    if (np.length() < 450) np.multiplyScalar(450 / np.length());
+    var ns = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: radialTexture(nebCols[ni % nebCols.length]), transparent: true, opacity: 0.05 + Math.random() * 0.04,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+    }));
+    ns.position.copy(np); ns.scale.setScalar(460 + Math.random() * 460);
+    scene.add(ns);
+  }
+
+  var loom = new THREE.Group();
+  scene.add(loom);
+  var trunk = new THREE.Group();
+  loom.add(trunk);
+
+  // trunk
+  (function buildTrunk() {
+    var pts = [], steps = 240;
+    for (var i = 0; i <= steps; i++) {
+      var x = trunkMin + (trunkMax - trunkMin) * i / steps;
+      pts.push(new THREE.Vector3(x, Math.sin(x * 0.035) * 0.9, Math.cos(x * 0.027) * 0.7));
+    }
+    var base = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+    var glow = new THREE.TubeGeometry(base, 220, 1.4, 8, false);
+    trunk.add(new THREE.Mesh(glow, new THREE.MeshBasicMaterial({
+      color: 0xffc95c, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false
+    })));
+    var strands = [['#f7c94d', 0], ['#ffb84d', Math.PI], ['#f7a33d', Math.PI / 2], ['#ffd76b', Math.PI * 1.5], ['#e6a84e', Math.PI / 4]];
+    for (var j = 0; j < strands.length; j++) {
+      var twc = new TwistCurve(base, 0.2, 7, strands[j][1]);
+      var geo = new THREE.TubeGeometry(twc, 220, 0.12, 5, false);
+      trunk.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: strands[j][0], transparent: true, opacity: 0.95 })));
+    }
+  })();
+
+  // branches
+  var hitMeshes = [];
+
+  function makeLabel(e) {
+    var title = e.title.length > 34 ? e.title.slice(0, 33) + '…' : e.title;
+    var note2 = e.note || ('[' + (e.base || 'UNKNOWN') + ']');
+    var c = document.createElement('canvas');
+    var g0 = c.getContext('2d');
+    g0.font = '600 21px "Courier New",monospace';
+    var w = Math.max(g0.measureText(title).width, g0.measureText(note2).width) + 54;
+    c.width = Math.ceil(w); c.height = 60;
+    var g = c.getContext('2d');
+    g.fillStyle = 'rgba(4,7,14,0.72)';
+    g.fillRect(0, 0, c.width, 60);
+    g.fillStyle = e.color;
+    g.beginPath(); g.arc(14, 17, 4.5, 0, Math.PI * 2); g.fill();
+    g.font = '600 21px "Courier New",monospace';
+    g.textBaseline = 'middle';
+    g.shadowColor = e.color; g.shadowBlur = 9;
+    g.fillStyle = '#f3f6ff';
+    g.fillText(title, 28, 19);
+    g.font = '13px "Courier New",monospace';
+    g.shadowBlur = 0;
+    g.fillStyle = '#9fb0d8';
+    g.fillText(note2, 28, 44);
+    var tex = new THREE.CanvasTexture(c);
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    sp.scale.set(c.width * 0.028, 60 * 0.028, 1);
+    sp.userData.baseScale = sp.scale.clone();
+    return sp;
+  }
+
+  entries.forEach(function (e) {
+    var L = e.L;
+    var dx = 0.9, dy = Math.sin(e.theta) * 1.05, dz = Math.sin(e.phi) * 0.8;
+    var X = new THREE.Vector3(1, 0, 0);
+    function pt(s) { return new THREE.Vector3(dx * s, dy * s, dz * s); }
+    var curve, pts;
+    if (e.zig) {
+      pts = [new THREE.Vector3(0, 0, 0), pt(L * 0.66), pt(L * 0.34).addScaledVector(X, -L * 0.22),
+        pt(L * 0.9).addScaledVector(X, L * 0.6), pt(L * 1.08).addScaledVector(X, L * 0.8)];
+      curve = new PolyCurve(pts);
+    } else {
+      pts = [new THREE.Vector3(0, 0, 0), pt(L * 0.42), pt(L).addScaledVector(X, L * 0.38), pt(L * 1.05).addScaledVector(X, L * 0.72)];
+      curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+    }
+    var markerPos = pts[pts.length - 1].clone();
+    var dN = new THREE.Vector3(dx, dy, dz).normalize();
+    var labelPos = markerPos.clone().addScaledVector(dN, 5).addScaledVector(X, L * 0.16);
+
+    var pivot = new THREE.Group();
+    pivot.position.set(e.x0, 0, 0);
+    pivot.rotation.order = 'YXZ';
+    pivot.userData.phase1 = e.i * 1.7;
+    pivot.userData.phase2 = e.i * 0.9;
+    pivot.userData.sway = 0.035 + (e.i % 5) * 0.005;
+    var inner = new THREE.Group();
+    pivot.add(inner);
+
+    var matA = new THREE.MeshBasicMaterial({ color: e.color, transparent: true, opacity: 0.96 });
+    var matB = new THREE.MeshBasicMaterial({ color: e.color, transparent: true, opacity: 0.85 });
+    var matGlow = new THREE.MeshBasicMaterial({ color: e.color, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+    var mA = new THREE.Mesh(new THREE.TubeGeometry(new TwistCurve(curve, 0.045, 9, 0), 44, 0.08, 6, false), matA);
+    var mB = new THREE.Mesh(new THREE.TubeGeometry(new TwistCurve(curve, 0.045, 9, Math.PI), 44, 0.08, 6, false), matB);
+    var mG = new THREE.Mesh(new THREE.TubeGeometry(curve, 36, 0.18, 5, false), matGlow);
+    inner.add(mA); inner.add(mB); inner.add(mG);
+
+    var mark = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12), new THREE.MeshBasicMaterial({ color: e.color, transparent: true, opacity: 1 }));
+    mark.position.copy(markerPos);
+    inner.add(mark);
+    var mglow = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTexture(e.color), transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false }));
+    mglow.position.copy(markerPos); mglow.scale.setScalar(3.6);
+    inner.add(mglow);
+    var jun = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTexture(e.color), transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }));
+    jun.scale.setScalar(2.2);
+    inner.add(jun);
+    var label = makeLabel(e);
+    label.position.copy(labelPos);
+    inner.add(label);
+
+    var dir = markerPos.clone().normalize();
+    var len = markerPos.length();
+    var hit = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, len, 6, 1), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+    hit.position.copy(markerPos.clone().multiplyScalar(0.5));
+    hit.quaternion.setFromUnitVectors(UP, dir);
+    hit.userData.branch = e;
+    inner.add(hit);
+    hitMeshes.push(hit);
+
+    e.pivot = pivot; e.inner = inner;
+    e.marker = mark; e.mglow = mglow; e.jun = jun; e.label = label;
+    e.mats = [matA, matB, matGlow];
+    e.baseOps = { mglow: 0.42, jun: 0.22, glow: 0.16 };
+    e.baseEst = { markS: 1, mglowS: mglow.scale.x, junS: jun.scale.x, glowOp: 0.16, labS: label.userData.baseScale.clone() };
+    loom.add(pivot);
+  });
+
+  document.getElementById('subtitle').textContent = 'MARVEL CINEMATIC MULTIVERSE // ' + entries.length + ' TEMPORAL POINTS';
+
+  // ------------------------------------------------------------- camera state
+  var tar = new THREE.Vector3(0, 4, 0);
+  var sph = { theta: 0.98, phi: 1.2, r: 450 };
+  var fly = null;
+
+  function updateCamera() {
+    if (fly) {
+      tar.lerp(fly.pos, 0.055);
+      sph.r += (fly.r - sph.r) * 0.055;
+      if (tar.distanceTo(fly.pos) < 0.8 && Math.abs(sph.r - fly.r) < 1) fly = null;
+    }
+    var cs = Math.sin(sph.phi);
+    camera.position.set(
+      tar.x + sph.r * cs * Math.sin(sph.theta),
+      tar.y + sph.r * Math.cos(sph.phi),
+      tar.z + sph.r * cs * Math.cos(sph.theta)
+    );
+    camera.lookAt(tar);
+  }
+
+  // ------------------------------------------------------------ interaction
+  var dom = renderer.domElement;
+  var dragging = false, rightDragging = false, lastPtr = { x: 0, y: 0 }, dragStart = { x: 0, y: 0 }, moved = 0;
+  var pointer = new THREE.Vector2(), ray = new THREE.Raycaster();
+
+  dom.addEventListener('mousedown', function (e) {
+    if (e.button === 1) e.preventDefault();
+    dragging = true; rightDragging = (e.button === 2 || e.shiftKey);
+    lastPtr.x = e.clientX; lastPtr.y = e.clientY;
+    dragStart.x = e.clientX; dragStart.y = e.clientY; moved = 0;
+  });
+  window.addEventListener('mouseup', function () { dragging = false; });
+  window.addEventListener('mousemove', function (e) {
+    if (dragging) {
+      var ddx = e.clientX - lastPtr.x, ddy = e.clientY - lastPtr.y;
+      moved += Math.abs(ddx) + Math.abs(ddy);
+      lastPtr.x = e.clientX; lastPtr.y = e.clientY;
+      if (rightDragging) {
+        var camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        var camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        var s = sph.r * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2 / dom.clientHeight;
+        tar.addScaledVector(camRight, -ddx * s).addScaledVector(camUp, ddy * s);
+      } else {
+        sph.theta -= ddx * 0.005;
+        sph.phi = Math.min(Math.PI - 0.1, Math.max(0.1, sph.phi + ddy * 0.005));
+      }
+    } else {
+      if (dateThrottle(e)) pickAt(e);
+    }
+  });
+  dom.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    sph.r = Math.min(1700, Math.max(80, sph.r * (1 + e.deltaY * 0.001)));
+  }, { passive: false });
+  dom.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  function toNdc(e) {
+    var r = dom.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  }
+  function pickAt(e) {
+    toNdc(e);
+    ray.setFromCamera(pointer, camera);
+    var hits = ray.intersectObjects(hitMeshes, false);
+    var b = null;
+    for (var i = 0; i < hits.length; i++) {
+      var cand = hits[i].object.userData.branch;
+      if (!cand || cand.hiddenByScrub) continue;
+      var obj = hits[i].object;
+      if ((cand.label.userData.baseScale) && !cand.hiddenByScrub) { b = cand; break; }
+    }
+    setHover(b, e.clientX, e.clientY);
+  }
+  var lastHoverT = 0;
+  function dateThrottle(e) {
+    var nowT = Date.now();
+    if (nowT - lastHoverT < 24) return false;
+    lastHoverT = nowT; return true;
+  }
+
+  dom.addEventListener('click', function (e) {
+    if (moved > 5) return;
+    toNdc(e);
+    ray.setFromCamera(pointer, camera);
+    var hits = ray.intersectObjects(hitMeshes, false);
+    var b = null;
+    for (var i = 0; i < hits.length; i++) { var cand = hits[i].object.userData.branch; if (cand && !cand.hiddenByScrub) { b = cand; break; } }
+    if (b) { pinned = (pinned === b) ? null : b; showCard(); }
+    else { pinned = null; showCard(); }
+  });
+  dom.addEventListener('dblclick', function (e) {
+    toNdc(e);
+    ray.setFromCamera(pointer, camera);
+    var hits = ray.intersectObjects(hitMeshes, false);
+    for (var i = 0; i < hits.length; i++) {
+      var cand = hits[i].object.userData.branch;
+      if (cand && !cand.hiddenByScrub) {
+        var w = cand.pivot.localToWorld(cand.marker.position.clone());
+        fly = { pos: w, r: Math.min(sph.r, 60) };
+        break;
+      }
+    }
+  });
+  dom.addEventListener('mouseleave', function () { setHover(null, 0, 0); });
+
+  // --------------------------------------------------------------- selection
+  var hovered = null, pinned = null, activeEarth = null, curSel = null;
+
+  function applySel(b) {
+    if (curSel && curSel !== b) restoreSel(curSel);
+    curSel = b || null;
+    if (b) {
+      var ub = b.baseEst;
+      b.marker.scale.setScalar(ub.markS * 1.9);
+      b.jun.scale.setScalar(ub.junS * 1.4);
+      b.mglow.scale.setScalar(ub.mglowS * 1.45);
+      b.mglow.material.opacity = 0.75;
+      b.label.scale.copy(ub.labS).multiplyScalar(1.16);
+    }
+    applyDim();
+  }
+  function restoreSel(b) {
+    var ub = b.baseEst;
+    b.marker.scale.setScalar(ub.markS);
+    b.jun.scale.setScalar(ub.junS);
+    b.mglow.scale.setScalar(ub.mglowS);
+    b.mglow.material.opacity = 0.42;
+    b.label.scale.copy(ub.labS);
+    applyDim();
+  }
+  function setHover(b, mx, my) {
+    var prev = hovered;
+    hovered = b;
+    if (b !== prev) applySel(b);
+    if (!pinned) {
+      if (b) { showCard(); positionCard(mx, my); }
+      else cardEl.style.display = 'none';
+    }
+  }
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function cardFor(b) {
+    var h = '<div class="c-head"><span class="c-title">' + esc(b.title) + '</span><span class="c-x" id="cX">&times;</span></div>';
+    h += '<div class="tag" style="border-color:' + b.color + ';color:' + b.color + '">' + esc(b.universe || 'UNKNOWN') + '</div>';
+    if (b.note) h += '<div class="c-line">NOTE: <b>' + esc(b.note) + '</b></div>';
+    if (b.season && b.season !== 'N/A') h += '<div class="c-line">SEASON: <b>' + esc(b.season) + '</b></div>';
+    if (b.episodes && b.episodes !== 'N/A') h += '<div class="c-line">EPISODES: <b>' + esc(b.episodes) + '</b></div>';
+    h += '<div class="c-line">TIME PERIOD: <b>' + esc(b.period || 'UNTEMPORAL') + '</b></div>';
+    return h;
+  }
+  var cardEl = document.getElementById('card');
+  function positionCard(mx, my) {
+    var cardX = Math.min(window.innerWidth - cardEl.offsetWidth - 16, mx + 18);
+    var cardY = Math.min(window.innerHeight - cardEl.offsetHeight - 16, my + 18);
+    cardEl.style.left = cardX + 'px'; cardEl.style.top = cardY + 'px';
+  }
+  function showCard() {
+    var b = pinned || hovered;
+    if (!b) { cardEl.style.display = 'none'; return; }
+    cardEl.innerHTML = cardFor(b);
+    var xb = document.getElementById('cX');
+    if (xb) xb.addEventListener('click', function (eve) { eve.stopPropagation(); pinned = null; cardEl.style.display = 'none'; });
+    cardEl.style.display = 'block';
+    if (pinned) { cardEl.style.top = ''; cardEl.style.bottom = '18px'; cardEl.style.left = '14px'; }
+  }
+
+  // ------------------------------------------------------------- dimming / legend
+  function applyDim() {
+    var dimBase = focusOn ? 0.05 : 0.5;
+    var target = activeEarth || (focusOn && hovered ? hovered.base : null);
+    var onlyTarget = !!(activeEarth || (focusOn && hovered));
+    entries.forEach(function (e) {
+      var on = onlyTarget ? (e.base === target) : true;
+      var dim = on ? 1 : dimBase;
+      e.mats[0].opacity = 0.96 * dim;
+      e.mats[1].opacity = 0.85 * dim;
+      e.mats[2].opacity = 0.16 * dim;
+      e.marker.material.opacity = dim;
+      e.mglow.material.opacity = 0.42 * dim;
+      e.jun.material.opacity = 0.22 * dim;
+      var isCur = (e === hovered || e === pinned);
+      var showLab = labelsEnabled || isCur || (activeEarth && e.base === activeEarth);
+      e.label.material.opacity = dim * (showLab ? 1 : 0);
+    });
+    var rows = document.querySelectorAll('.leg-row');
+    rows.forEach(function (row) {
+      row.classList.remove('on', 'dim');
+      var base = row.getAttribute('data-base');
+      if (activeEarth) { if (base === activeEarth) row.classList.add('on'); else row.classList.add('dim'); }
+    });
+  }
+  function setActiveEarth(base) {
+    activeEarth = base || null;
+    if (curSel) { restoreSel(curSel); curSel = null; }
+    applyDim();
+  }
+
+  var legList = document.getElementById('leglist');
+  var earthCounts = {};
+  entries.forEach(function (e) { earthCounts[e.base] = (earthCounts[e.base] || 0) + 1; });
+  earths.forEach(function (base) {
+    var row = document.createElement('div');
+    row.className = 'leg-row';
+    row.setAttribute('data-base', base);
+    var col = earthColor(base);
+    row.innerHTML = '<span class="leg-swatch" style="background:' + col + ';color:' + col + '"></span>' +
+      '<span class="leg-name">' + esc(base || 'UNKNOWN') + '</span><span class="leg-count">' + earthCounts[base] + '</span>';
+    row.addEventListener('click', function () { setActiveEarth(base); });
+    legList.appendChild(row);
+  });
+
+  document.getElementById('bShowAll').addEventListener('click', function () { setActiveEarth(null); });
+  document.getElementById('b616').addEventListener('click', function () { setActiveEarth('Earth-616'); });
+
+  // ------------------------------------------------------------ toggles
+  function makeToggle(id, onInitial, cb) {
+    var el = document.getElementById(id);
+    el.classList.toggle('on', onInitial);
+    el.addEventListener('click', function () { el.classList.toggle('on'); cb(el.classList.contains('on')); });
+    return el;
+  }
+  var labelsEnabled = false;
+  makeToggle('tgLabels', false, function (on) { labelsEnabled = on; applyDim(); });
+  var focusOn = false;
+  makeToggle('tgFocus', false, function (on) { focusOn = on; applyDim(); });
+  var animOn = true;
+  makeToggle('tgAnim', true, function (on) { animOn = on; });
+  var speedF = 0.6;
+  document.getElementById('speed').addEventListener('input', function (e) { speedF = +e.target.value / 40; });
+  document.getElementById('bLegend').addEventListener('click', function () {
+    var leg = document.getElementById('legend');
+    var collapsed = leg.classList.toggle('collapsed');
+    this.textContent = collapsed ? 'REALITIES ▸' : 'REALITIES ▾';
+  });
+
+  // ------------------------------------------------------------- tab switching
+  var dbEl = document.getElementById('db');
+  var vignetteEl = document.querySelector('.vignette');
+  var loomPanels = ['title', 'controls', 'legend', 'card', 'help'].map(function (id) { return document.getElementById(id); });
+  function switchTab(name) {
+    var isLoom = (name === 'loom');
+    document.getElementById('tabLoom').classList.toggle('act', isLoom);
+    document.getElementById('tabDb').classList.toggle('act', !isLoom);
+    app.style.display = isLoom ? 'block' : 'none';
+    if (vignetteEl) vignetteEl.style.display = isLoom ? 'block' : 'none';
+    loomPanels.forEach(function (p) { if (p) p.style.display = isLoom ? '' : 'none'; });
+    dbEl.classList.toggle('on', !isLoom);
+    if (isLoom) {
+      if (dbFilterEarth && dbFilterEarth !== activeEarth) setActiveEarth(dbFilterEarth);
+      else applyDim();
+    }
+  }
+  document.getElementById('tabLoom').addEventListener('click', function () { switchTab('loom'); });
+  document.getElementById('tabDb').addEventListener('click', function () { switchTab('db'); renderDB(); });
+  document.getElementById('dbPrint').addEventListener('click', function (e) { e.target.classList.add('act'); e.target.textContent = 'QUEUED'; });
+  document.getElementById('dbArchive').addEventListener('click', function (e) { e.target.classList.add('act'); e.target.textContent = 'ARCHIVED'; });
+
+  // ------------------------------------------------------------- database view
+  var dbSortKey = 'case', dbSortDir = 1, dbSearchQ = '', dbEarthQ = '', dbFilterEarth = '', dbWf = false;
+  var dbBody = document.getElementById('dbBody');
+  var dbSearch = document.getElementById('dbSearch');
+  var dbEarthSel = document.getElementById('dbEarth');
+  var dbCount = document.getElementById('dbCount');
+  var dbDetail = document.getElementById('dbDetail');
+  var LS_WATCHED = 'tva_watched_v1';
+  var watched = {};
+  try { watched = JSON.parse(localStorage.getItem(LS_WATCHED) || '{}'); } catch (err) {}
+  function isWatched(e) { return !!watched[e.wkey || String(e.i)]; }
+  function setWatched(e, on) {
+    var k = e.wkey || String(e.i);
+    if (on) watched[k] = true; else delete watched[k];
+    try { localStorage.setItem(LS_WATCHED, JSON.stringify(watched)); } catch (err) {}
+  }
+  function watchedTotal() {
+    var cur = dbCur(), n = 0;
+    cur.forEach(function (en) { if (watched[en.wkey || String(en.i)]) n++; });
+    return n;
+  }
+  var dbSet = 'main';
+  function dbCur() { return DATASETS[dbSet] || entries; }
+  function dbOptsFor(cur) {
+    var counts = {};
+    cur.forEach(function (e) { counts[e.base] = (counts[e.base] || 0) + 1; });
+    var bases = [];
+    cur.forEach(function (e) { if (bases.indexOf(e.base) < 0) bases.push(e.base); });
+    bases.sort();
+    var opts = [{ v: '', t: 'ALL REALITIES' }];
+    bases.forEach(function (b) { opts.push({ v: b, t: (b || 'UNKNOWN') + ' (' + (counts[b] || 0) + ')' }); });
+    return opts;
+  }
+  var DBSET_LABELS = { main: 'TIMELINE', '90s': '90\'S SHOWS', '2010s': '2010S SHOWS', uni: 'UNIVERSE KEY' };
+  var dbSetsEl = document.getElementById('dbSets');
+  function renderDbSets() {
+    if (!dbSetsEl) return;
+    dbSetsEl.innerHTML = '';
+    DBSET_KEYS.forEach(function (k) {
+      var b = document.createElement('button');
+      b.className = 'btn' + (k === dbSet ? ' act' : '');
+      b.textContent = DBSET_LABELS[k];
+      b.addEventListener('click', function () {
+        if (dbSet === k) return;
+        dbSet = k;
+        dbSearchQ = ''; dbSearch.value = '';
+        dbEarthQ = ''; dbFilterEarth = ''; dbWf = false;
+        if (dbWfBtn) { dbWfBtn.classList.remove('act'); dbWfBtn.textContent = 'WATCHED ONLY'; }
+        dbSortKey = 'case'; dbSortDir = 1;
+        document.querySelectorAll('#dbTable th .sort-arrow').forEach(function (s) { s.remove(); });
+        var caseTh = document.querySelector('#dbTable th[data-k="case"]');
+        if (caseTh) {
+          var ar = document.createElement('span'); ar.className = 'sort-arrow'; ar.textContent = '▲';
+          caseTh.appendChild(ar);
+        }
+        renderDbSets();
+        renderDB();
+      });
+      dbSetsEl.appendChild(b);
+    });
+  }
+  renderDbSets();
+
+  function sortVal(e) {
+    switch (dbSortKey) {
+      case 'case': return e.i;
+      case 'title': return e.title.toLowerCase();
+      case 'base': return (e.base || '').toLowerCase();
+      case 'season': return (e.season === 'N/A' ? '' : (e.season || '')).toLowerCase();
+      case 'episodes': return (e.episodes === 'N/A' ? '' : (e.episodes || '')).toLowerCase();
+      case 'year': return e.yMin != null ? e.yMin : Infinity;
+      case 'watched': return isWatched(e) ? 1 : 0;
+    }
+    return e.i;
+  }
+  function renderDB() {
+    var cur = dbCur();
+    cur.forEach(function (e) { if (!e.color) e.color = earthColor(e.base); });
+    dbEarthSel.innerHTML = '';
+    dbOptsFor(cur).forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o.v; op.textContent = o.t;
+      if (o.v === dbEarthQ) op.selected = true;
+      dbEarthSel.appendChild(op);
+    });
+    var q = dbSearchQ.toLowerCase();
+    var list = cur.filter(function (e) {
+      if (dbWf && !watched[e.wkey || String(e.i)]) return false;
+      if (dbEarthQ && e.base !== dbEarthQ) return false;
+      if (q) {
+        var hay = (e.title + ' ' + e.universe + ' ' + (e.note || '') + ' ' + (e.base || '')).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    list.sort(function (a, b) {
+      var va = sortVal(a), vb = sortVal(b);
+      if (va === vb) return a.title.localeCompare(b.title);
+      return va < vb ? -dbSortDir : dbSortDir;
+    });
+    var wt = watchedTotal();
+    dbCount.textContent = list.length + ' / ' + cur.length + ' ENTRIES' + (wt ? ' · ' + wt + ' WATCHED' : '');
+    var wfill = document.getElementById('dbProgFill');
+    if (wfill) wfill.style.width = (cur.length ? Math.round(wt / cur.length * 100) : 0) + '%';
+    dbBody.innerHTML = '';
+    list.forEach(function (e) {
+      var tr = document.createElement('tr');
+      var wk = isWatched(e);
+      if (wk) tr.classList.add('w');
+      tr.setAttribute('data-idx', String(e.i));
+      tr.innerHTML = '<td class="c-case">CASE #' + ('0000' + (e.i + 1)).slice(-4) + '</td>'
+        + '<td class="c-w"><span class="chk' + (wk ? ' on' : '') + '" title="CHECK TO MARK WATCHED">' + (wk ? '✓' : '') + '</span></td>'
+        + '<td class="c-title">' + esc(e.title) + '</td>'
+        + '<td><span class="dot" style="background:' + e.color + ';color:' + e.color + '"></span>' + esc(e.base || 'UNKNOWN')
+        + (e.note ? ' <span class="nb">' + esc(e.note) + '</span>' : '') + '</td>'
+        + '<td>' + esc(e.season === 'N/A' ? '—' : e.season) + '</td>'
+        + '<td>' + esc(e.episodes === 'N/A' ? '—' : e.episodes) + '</td>'
+        + '<td class="c-period">' + esc(e.period || 'UNTEMPORAL') + '</td>';
+      tr.addEventListener('click', function () {
+        showDBDetail(e);
+        var sel = dbBody.querySelector('tr.sel');
+        if (sel) sel.classList.remove('sel');
+        tr.classList.add('sel');
+      });
+      tr.addEventListener('dblclick', function () { if (e.loom) openInLoom(e); });
+      var chk = tr.querySelector('.chk');
+      if (chk) chk.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        setWatched(e, !isWatched(e));
+        renderDB();
+      });
+      dbBody.appendChild(tr);
+    });
+  }
+  function showDBDetail(e) {
+    dbDetail.classList.add('on');
+    dbDetail.innerHTML = '<div class="c-title">' + esc(e.title) + '</div>'
+      + '<div class="tag" style="border-color:' + e.color + ';color:' + e.color + '">' + esc(e.universe || 'UNKNOWN') + '</div>'
+      + (e.note ? '<div class="c-line">NOTE: <b>' + esc(e.note) + '</b></div>' : '')
+      + '<div class="c-line">SEASON: <b>' + esc(e.season === 'N/A' ? '—' : e.season) + '</b> &nbsp;&nbsp; EPISODES: <b>' + esc(e.episodes === 'N/A' ? '—' : e.episodes) + '</b></div>'
+      + '<div class="c-line">TIME PERIOD: <b>' + esc(e.period || 'UNTEMPORAL') + '</b></div>'
+      + '<div style="margin-top:6px"><button class="btn" id="dbWtgl">' + (isWatched(e) ? '✓ WATCHED' : 'MARK WATCHED') + '</button>'
+      + (e.loom ? '<button class="btn" id="dbOpenLoom">OPEN IN LOOM ⟶</button>' : '') + '</div>';
+    var b = document.getElementById('dbOpenLoom');
+    if (b) b.addEventListener('click', function () { openInLoom(e); });
+    var wt = document.getElementById('dbWtgl');
+    if (wt) wt.addEventListener('click', function () {
+      setWatched(e, !isWatched(e));
+      showDBDetail(e);
+      renderDB();
+    });
+  }
+  function openInLoom(e) {
+    pinned = e;
+    switchTab('loom');
+    applySel(e);
+    showCard();
+    requestAnimationFrame(function () {
+      var w = e.pivot.localToWorld(e.marker.position.clone());
+      fly = { pos: w, r: 62 };
+    });
+  }
+  document.querySelectorAll('#dbTable th').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var k = th.getAttribute('data-k');
+      if (dbSortKey === k) dbSortDir *= -1;
+      else dbSortKey = k;
+      document.querySelectorAll('#dbTable th .sort-arrow').forEach(function (s) { s.remove(); });
+      var arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      arrow.textContent = dbSortDir === 1 ? '▲' : '▼';
+      th.appendChild(arrow);
+      renderDB();
+    });
+  });
+  dbSearch.addEventListener('input', function () { dbSearchQ = this.value; renderDB(); });
+  dbEarthSel.addEventListener('change', function () {
+    dbEarthQ = this.value;
+    dbFilterEarth = (dbSet === 'main') ? dbEarthQ : '';
+    renderDB();
+  });
+  var dbWfBtn = document.getElementById('dbWf');
+  dbWfBtn.addEventListener('click', function () {
+    dbWf = !dbWf;
+    dbWfBtn.classList.toggle('act', dbWf);
+    dbWfBtn.textContent = dbWf ? 'ALL ENTRIES' : 'WATCHED ONLY';
+    renderDB();
+  });
+  document.getElementById('dbReset').addEventListener('click', function () {
+    dbSearchQ = ''; dbEarthQ = ''; dbFilterEarth = ''; dbWf = false;
+    dbSearch.value = '';
+    dbWfBtn.classList.remove('act');
+    dbWfBtn.textContent = 'WATCHED ONLY';
+    renderDB();
+  });
+
+  // ------------------------------------------------------------ release queue
+  var RL = [
+    { key: 'ironheart', title: 'Iron Heart', tag: 'UPCOMING', match: 'ironheart' },
+    { key: 'wonderman', title: 'Wonder-Man', tag: 'UPCOMING', match: 'wonder-man' },
+    { key: 'spidernoir', title: 'Spider-Noir', tag: 'RELEASED', match: '' },
+    { key: 'ddba2', title: 'Daredevil: Born Again S2', tag: 'UPCOMING', match: 'born again' },
+    { key: 'punolk', title: 'The Punisher: One Last Kill', tag: 'RELEASED', match: 'one last kill' },
+    { key: 'xm97', title: "X-Men '97", tag: 'RELEASED', match: "x-men '97" },
+    { key: 'smbnd', title: 'Spider-Man: Brand New Day', tag: 'UPCOMING', match: 'brand new day' },
+    { key: 'visionq', title: 'Vision Quest', tag: 'UPCOMING', match: '' },
+    { key: 'fnsm2', title: 'Spider-Man: FNSM S2', tag: 'UPCOMING', match: '' },
+    { key: 'doomsday', title: 'Avengers: Doomsday', tag: 'UPCOMING', match: 'doomsday' },
+    { key: 'secretwars', title: 'Secret Wars', tag: 'UPCOMING', match: '' },
+    { key: 'ghostrider', title: 'Ghost Rider', tag: 'UPCOMING', match: '' },
+    { key: 'xmen', title: 'X-Men', tag: 'UPCOMING', match: '' },
+    { key: 'gr2007', title: 'Ghost Rider (2007)', tag: 'RELEASED', match: '' }
+  ];
+  var LS_RL = 'tva_rl_v1';
+  var rlState = { done: {}, gone: {}, custom: [] };
+  try { var rs = JSON.parse(localStorage.getItem(LS_RL) || 'null'); if (rs) rlState = rs; } catch (err) {}
+  function rlSave() { try { localStorage.setItem(LS_RL, JSON.stringify(rlState)); } catch (err) {} }
+  var rlHay = [];
+  Object.keys(DATASETS).forEach(function (k) {
+    DATASETS[k].forEach(function (e) { rlHay.push((e.title || '').toLowerCase()); });
+  });
+  function rlInDb(r) {
+    if (!r.match) return false;
+    var m = r.match.toLowerCase();
+    for (var i = 0; i < rlHay.length; i++) { if (rlHay[i].indexOf(m) >= 0) return true; }
+    return false;
+  }
+  function rlAll() {
+    return RL.concat(rlState.custom.map(function (c) { return { key: 'c' + c.key, title: c.title, tag: '', match: '' }; }));
+  }
+  function renderRL() {
+    var body = document.getElementById('rlBody');
+    var count = document.getElementById('rlCount');
+    var all = rlAll().filter(function (r) { return !rlState.gone[r.key] && !rlInDb(r); });
+    var doneN = 0;
+    body.innerHTML = '';
+    all.forEach(function (r) {
+      var inDb = rlInDb(r);
+      var done = inDb || !!rlState.done[r.key];
+      if (done) doneN++;
+      var row = document.createElement('div');
+      row.className = 'rl-row' + (done ? ' done' : '');
+      var chip = inDb ? '<span class="rl-chip in">IN DB</span>' : (r.tag ? '<span class="rl-chip ' + (r.tag === 'RELEASED' ? 'out' : 'up') + '">' + r.tag + '</span>' : '');
+      row.innerHTML = '<span class="rl-box' + (done ? ' on' : '') + '">' + (done ? '✓' : '') + '</span>'
+        + '<div class="rl-txt"><div class="rl-t">' + esc(r.title) + chip + '</div></div>'
+        + '<span class="rl-x" title="REMOVE">✕</span>';
+      row.querySelector('.rl-box').addEventListener('click', function () {
+        if (inDb) return;
+        if (rlState.done[r.key]) delete rlState.done[r.key]; else rlState.done[r.key] = true;
+        rlSave(); renderRL();
+      });
+      row.querySelector('.rl-x').addEventListener('click', function () {
+        rlState.gone[r.key] = true;
+        rlSave(); renderRL();
+      });
+      body.appendChild(row);
+    });
+    count.textContent = doneN + ' / ' + all.length;
+  }
+  document.getElementById('rlHead').addEventListener('click', function () {
+    document.getElementById('rlPanel').classList.toggle('rl-collapsed');
+  });
+  function rlAddItem() {
+    var inp = document.getElementById('rlAdd');
+    var v = (inp.value || '').trim();
+    if (!v) return;
+    rlState.custom.unshift({ key: Date.now(), title: v });
+    inp.value = '';
+    rlSave(); renderRL();
+  }
+  document.getElementById('rlAddBtn').addEventListener('click', rlAddItem);
+  document.getElementById('rlAdd').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') rlAddItem();
+  });
+  renderRL();
+
+  // ------------------------------------------------------------ scrubber
+  var scrub = document.getElementById('scrub');
+  var scrubLabel = document.getElementById('scrubLabel');
+  var scrubPlaying = false;
+  function xToYear(x) {
+    if (x < 0) { var y0 = MOD0 + x / (K * 0.045); return (y0 < 1 ? String(Math.round(1 - y0)) + ' BC' : String(Math.round(y0))); }
+    var y;
+    if (x <= (2033 - MOD0) * K) y = MOD0 + x / K;
+    else y = 2033 + (x - (2033 - MOD0) * K) / (K * 0.15);
+    y = Math.round(y);
+    if (y <= 0) return String(1 - y) + ' BC';
+    return String(y) + (y > 2033 ? ' +' : '');
+  }
+  function applyScrub(x) {
+    entries.forEach(function (e) {
+      var on = e.x0 <= x + 0.2;
+      e.hiddenByScrub = !on;
+      e.inner.visible = on;
+    });
+    scrubLabel.textContent = 'LOOM TIME / YEAR ' + xToYear(x);
+  }
+  scrub.addEventListener('input', function () {
+    var x = trunkMin + spanX * (+scrub.value / 1000);
+    applyScrub(x);
+  });
+  var playBtn = document.getElementById('bPlay');
+  playBtn.addEventListener('click', function () {
+    scrubPlaying = !scrubPlaying;
+    playBtn.classList.toggle('act', scrubPlaying);
+    playBtn.textContent = scrubPlaying ? 'PAUSE' : 'PLAY';
+  });
+
+  // --------------------------------------------------------------- animate
+  function animate(t) {
+    requestAnimationFrame(animate);
+    var time = t / 1000;
+    var sp = animOn ? speedF : 0;
+
+    if (animOn) {
+      loom.rotation.y = time * 0.04 * speedF;
+      entries.forEach(function (e) {
+        var p = e.pivot;
+        p.rotation.y = Math.sin(time * 0.55 * speedF + p.userData.phase1) * p.userData.sway;
+        p.rotation.z = Math.sin(time * 0.4 * speedF + p.userData.phase2) * 0.05;
+      });
+    }
+    if (scrubPlaying) {
+      var v = (+scrub.value + 1 * speedF * 1.6) % 1001;
+      scrub.value = v;
+      applyScrub(trunkMin + spanX * (v / 1000));
+    }
+    updateCamera();
+    renderer.render(scene, camera);
+  }
+
+  window.addEventListener('resize', function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // ------------------------------------------------------------ doom clock
+  var DOOM_TARGET = Date.UTC(2026, 11, 18);
+  var doomEl = document.getElementById('doom');
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function tickDoom() {
+    var ms = DOOM_TARGET - Date.now();
+    var tick = document.getElementById('doomTick');
+    var sub = document.getElementById('doomSub');
+    if (!tick || !sub) return;
+    if (ms <= 0) {
+      tick.textContent = '00:00:00:00';
+      sub.textContent = 'THE DAY HAS COME — PORTALS OPEN';
+      if (doomEl) doomEl.classList.add('zero');
+      return;
+    }
+    var d = Math.floor(ms / 86400000);
+    tick.textContent = pad2(d) + ':' + pad2(Math.floor(ms / 3600000) % 24) + ':' + pad2(Math.floor(ms / 60000) % 60) + ':' + pad2(Math.floor(ms / 1000) % 60);
+    sub.textContent = 'T-MINUS ' + d + ' DAYS';
+  }
+  tickDoom();
+  setInterval(tickDoom, 1000);
+  if (doomEl) {
+    var doomHead = doomEl.querySelector('h2');
+    if (doomHead) doomHead.addEventListener('click', function () { doomEl.classList.toggle('collapse'); });
+  }
+
+  // ------------------------------------------------------------ universe menu
+  var UNS = {
+    marvel: { name: 'MARVEL MAIN', tag: 'TVA // MULTIVERSAL LOOM', pending: false, swatch: '#ffd24a' },
+    dc: { name: 'DC UNIVERSE', tag: 'THE DC MULTIVERSE', pending: true, swatch: '#39c7ff' },
+    starwars: { name: 'STAR WARS', tag: 'A GALAXY FAR, FAR AWAY', pending: true, swatch: '#ff5b7f' },
+    marvelcomics: { name: 'MARVEL COMICS', tag: 'EARTH-616 — CLASSIC', pending: true, swatch: '#ff3b3b' },
+    doctorwho: { name: 'DOCTOR WHO', tag: 'THE WHONIVERSE', pending: true, swatch: '#8f9bff' }
+  };
+  var UNI_ORDER = ['marvel', 'dc', 'starwars', 'marvelcomics', 'doctorwho'];
+  var burgerEl = document.getElementById('burger');
+  var uniMenuEl = document.getElementById('uniMenu');
+  var uniShellEl = document.getElementById('uniShell');
+  var curUni = 'marvel';
+
+  function buildUniMenu() {
+    uniMenuEl.innerHTML = '<div class="uni-title">UNIVERSES</div>';
+    UNI_ORDER.forEach(function (k) {
+      var u = UNS[k];
+      var b = document.createElement('button');
+      b.className = 'uni-item' + (k === curUni ? ' act' : '');
+      b.innerHTML = '<span class="u-dot" style="background:' + u.swatch + ';color:' + u.swatch + '"></span>' +
+        '<span class="u-name">' + u.name + '</span><span class="u-st">' + (u.pending ? 'PENDING' : 'INDEXED') + '</span>';
+      b.addEventListener('click', function () { setUniverse(k); closeUniMenu(); });
+      uniMenuEl.appendChild(b);
+    });
+  }
+  function openUniMenu() { uniMenuEl.classList.add('on'); burgerEl.classList.add('on'); }
+  function closeUniMenu() { uniMenuEl.classList.remove('on'); burgerEl.classList.remove('on'); }
+  function setUniverse(k) {
+    curUni = k;
+    var u = UNS[k];
+    if (k === 'marvel') {
+      uniShellEl.classList.remove('on');
+    } else {
+      uniShellEl.innerHTML = '<div class="tag" style="border-color:' + u.swatch + ';color:' + u.swatch + '">' + u.name + '</div>' +
+        '<div class="shell-name" style="color:' + u.swatch + '">' + u.name + '</div>' +
+        '<div class="shell-tag">' + u.tag + '</div>' +
+        '<div class="shell-st">DATASET PENDING — NOT YET INDEXED</div>' +
+        '<div class="shell-hint">OPEN THE ☰ MENU AND SELECT MARVEL MAIN TO RETURN</div>';
+      uniShellEl.classList.add('on');
+    }
+    buildUniMenu();
+  }
+  burgerEl.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (uniMenuEl.classList.contains('on')) closeUniMenu(); else openUniMenu();
+  });
+  document.addEventListener('click', function (e) {
+    if (!uniMenuEl.contains(e.target) && e.target !== burgerEl) closeUniMenu();
+  });
+  buildUniMenu();
+
+  updateCamera();
+  applyScrub(trunkMin + spanX);
+  applyDim();
+  renderDB();
+  var caseTh = document.querySelector('#dbTable th[data-k="case"]');
+  if (caseTh) {
+    var arrow = document.createElement('span');
+    arrow.className = 'sort-arrow';
+    arrow.textContent = '▲';
+    caseTh.appendChild(arrow);
+  }
+  requestAnimationFrame(animate);
+} // end startApp
+
+  function boot() {
+    if (typeof THREE !== 'undefined') { bootEl.style.display = 'none'; startApp(); return; }
+    var n = 0;
+    var iv = setInterval(function () {
+      n++;
+      if (typeof THREE !== 'undefined') { clearInterval(iv); bootEl.style.display = 'none'; startApp(); }
+      else if (n > 60) { showErr('THREE.JS ENGINE FAILED TO LOAD'); }
+    }, 100);
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
