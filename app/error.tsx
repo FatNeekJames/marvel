@@ -6,13 +6,14 @@ export default function ErrorPage({
   reset: () => void
 }) {
   return (
-    <main className="grid min-h-screen place-items-center p-6">
-      <div className="rounded-lg border border-red-400/40 bg-panel p-8">
-        <h1 className="text-xl">The timeline encountered an error.</h1>
-        <button className="mt-5 rounded border border-gold px-4 py-2 text-gold" onClick={reset}>
-          TRY AGAIN
-        </button>
-      </div>
-    </main>
+    <div id="errBox">
+      RUNTIME ERROR
+      {'\n'}
+      The timeline encountered an error.
+      {'\n\n'}
+      <button className="btn" onClick={reset}>
+        TRY AGAIN
+      </button>
+    </div>
   )
 }
