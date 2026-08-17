@@ -4,7 +4,8 @@
   "private": true,
   "description": "Production-ready Marvel timeline application",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --no-warnings scripts/dev.mjs",
+    "dev:web": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -30,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@prisma/dev": "^0.25.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.2.0",
     "@types/pg": "^8.23.0",
