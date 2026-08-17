@@ -38,6 +38,12 @@ npm run build
 
 Run the complete verification pipeline with `npm run check`.
 
+## Documentation
+
+In-depth supporting documentation lives in [`docs/`](docs/README.md): architecture,
+database & data model, local development, API reference, deployment, testing, and a
+glossary.
+
 ## Database workflow
 
 - Change `prisma/schema.prisma` for schema updates.
