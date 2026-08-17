@@ -15,18 +15,17 @@ Runtime code does not parse CSV, use browser storage, or call static utility met
 
 ## Local setup
 
-Requirements: Node.js 24+ and PostgreSQL.
+Requirement: Node.js 24+. `npm run dev` starts a persistent local PostgreSQL-compatible database automatically.
 
 ```sh
-copy .env.example .env
 npm install
 npm run db:generate
-npm run db:migrate
-npm run db:seed
 npm run dev
 ```
 
-Set `DATABASE_URL` in `.env` before running the database commands. The committed seed contains the 278 records migrated from the original application.
+The development command starts local Prisma Postgres, applies committed migrations, seeds the 278 migrated records, injects its connection URL into Next.js, and shuts the database down with the web server. Data persists between runs under the `temporal-loom` instance name.
+
+Production and standalone database commands still require `DATABASE_URL`; copy `.env.example` to `.env` and replace it with the deployed PostgreSQL connection string.
 
 ## Quality checks
 
