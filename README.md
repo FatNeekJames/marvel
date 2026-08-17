@@ -1,33 +1,58 @@
-# MCU Timeline Temporal Loom
+# MCU Temporal Loom
 
-> **Pure vibe code.** An interactive, TVA-style visualisation of the Marvel multiverse timeline.
+A database-backed Next.js application for exploring the Marvel multiverse timeline as a searchable catalogue and a Three.js temporal loom.
 
-A single-file HTML app that renders the Marvel Cinematic Universe (and surrounding multiverse) as a glowing 3D temporal loom — a branching river of light where every movie, show and universe is a distinct thread. Spin it, zoom it, poke it. Live with no build step.
+## Architecture
 
-## Features
+- **Next.js 16 App Router** provides server rendering, routing, API handlers, and production builds.
+- **React 19 + TypeScript** provide typed server/client component boundaries.
+- **PostgreSQL + Prisma ORM** persist timeline entries, users, watch records, and release queues.
+- **Tailwind CSS 4** owns component styling; the small global stylesheet contains only design tokens and document defaults.
+- **Three.js** is isolated behind `TemporalLoomScene`, which owns its renderer, animation frame, resize observer, and cleanup lifecycle.
+- **Zod** validates API input before it reaches the repository.
 
-- **3D Temporal Loom** — every entry is a light-branch on the growing timeline, colour-coded by reality. Drag to orbit, right-drag to pan, scroll to zoom, double-click to fly to a point.
-- **Entry Database** — searchable, sortable, filter-by-reality tables for:
-  - **TIMELINE** — 160+ films/shows/one-shots across the MCU and the wider multiverse
-  - **90'S SHOWS** — animated series database
-  - **2010S SHOWS** — animated series database
-  - **UNIVERSE KEY** — a reference of numbered realities (Earth-616, Earth-1610, Earth-TRN414…)
-- **Watched tracking** — tick anything off per database; progress bars and a WATCHED ONLY filter remember it all in `localStorage`.
-- **Release Queue** — a corner checklist for upcoming and yet-to-be-filed titles that auto-crosses off when a title lands in a database.
-- **Universe Menu** — the ☰ hamburger menu switches between swimming pools (Marvel Main today; DC, Star Wars, Marvel Comics, Doctor Who shells ready for data).
-- **Doomsday Clock** — a live countdown ticking in the corner.
-- No frameworks, no build step, no backend — one HTML file + Three.js.
+Runtime code does not parse CSV, use browser storage, or call static utility methods. Pages and API routes receive data through the `TimelineRepository` interface, whose production implementation is `PrismaTimelineRepository`.
 
-## Run it
+## Local setup
 
-Just open `index.html`. If the local `three.min.js` fails to load it falls back to the CDN. No server required.
+Requirements: Node.js 24+ and PostgreSQL.
 
-## Stack
+```sh
+copy .env.example .env
+npm install
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
 
-- [Three.js](https://threejs.org) r128 for the WebGL scene
-- Vanilla JS (IIFE, no build step)
-- `localStorage` for all persistence
+Set `DATABASE_URL` in `.env` before running the database commands. The committed seed contains the 278 records migrated from the original application.
 
-## Status
+## Quality checks
 
-Pure vibe code — built for fun, evolving whenever the vibe demands it. Clean single commit per vibe checkpoint.
+```sh
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Run the complete verification pipeline with `npm run check`.
+
+## Database workflow
+
+- Change `prisma/schema.prisma` for schema updates.
+- Run `npm run db:migrate` during development and commit the generated migration.
+- Run `npm run db:deploy` in deployment environments.
+- `npm run db:seed` is idempotent because records are upserted by `legacyKey`.
+
+Do not access Prisma directly from UI components. Add queries to the repository contract and implement them in the Prisma adapter so domain and presentation code remain testable.
+
+## Security
+
+- Request input is bounded and validated with Zod.
+- Prisma parameterizes database queries.
+- Security headers deny framing, browser capabilities, plugins, and cross-origin form submission.
+- No third-party scripts are loaded at runtime.
+- Dependency versions are locked and audit clean.
+- Database failures are handled without leaking connection details to users.
