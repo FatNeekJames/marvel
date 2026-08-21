@@ -7,7 +7,7 @@ import { getDoomClientSnapshot, getDoomServerSnapshot, subscribeDoom } from '@/l
 import { layoutLoomPoints, toLoomPoint, type LoomPoint } from '@/lib/loom/points'
 import { UNIVERSES } from '@/lib/loom/queue'
 import { DatabaseView } from '@/components/database-view'
-import { TimelineCanvas, type LoomHandle, type LoomSelection } from '@/components/timeline-canvas'
+import { TimelineMap, type LoomHandle, type LoomSelection } from '@/components/timeline-map'
 
 type Props = {
   datasets: Readonly<{
@@ -126,7 +126,7 @@ export function TimelineExplorer({ datasets }: Props) {
   return (
     <>
       <div style={{ display: view === 'loom' ? 'block' : 'none' }}>
-        <TimelineCanvas
+        <TimelineMap
           points={points}
           layout={layout}
           apiRef={loom}
@@ -318,8 +318,8 @@ export function TimelineExplorer({ datasets }: Props) {
             ) : null}
           </article>
           <p className="hud" id="help">
-            DRAG: ORBIT &nbsp;&bull;&nbsp; RIGHT-DRAG: PAN &nbsp;&bull;&nbsp; SCROLL: ZOOM
-            &nbsp;&bull;&nbsp; DBL-CLICK: FLY TO POINT
+            DRAG: PAN &nbsp;&bull;&nbsp; SCROLL: ZOOM &nbsp;&bull;&nbsp; CLICK: PROJECT DETAILS
+            &nbsp;&bull;&nbsp; DBL-CLICK IN DATABASE: LOCATE
           </p>
         </>
       ) : (

@@ -47,6 +47,193 @@ select {
 canvas {
   display: block;
 }
+.timeline-map {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  padding-top: 66px;
+  padding-bottom: 64px;
+  background:
+    radial-gradient(circle at 50% 45%, rgb(25 35 56 / 42%), transparent 45%),
+    linear-gradient(180deg, #070a12 0%, #03050a 100%);
+  scrollbar-color: rgb(255 210 74 / 38%) #080b13;
+}
+.year-ruler {
+  position: fixed;
+  z-index: 8;
+  top: 106px;
+  left: 14px;
+  right: 14px;
+  height: 30px;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: #8090b5;
+  background: linear-gradient(180deg, rgb(4 7 13 / 96%), rgb(4 7 13 / 72%));
+  border-bottom: 1px solid rgb(255 210 74 / 20%);
+}
+.year-ruler-title {
+  position: absolute;
+  z-index: 2;
+  left: 6px;
+  top: 7px;
+  color: #ffd24a;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+}
+.year-ruler-tick {
+  position: absolute;
+  top: 6px;
+  padding-left: 4px;
+  border-left: 1px solid rgb(255 210 74 / 38%);
+  font-size: 8px;
+  white-space: nowrap;
+}
+.map-toolbar {
+  position: fixed;
+  z-index: 9;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  color: #8fa0c8;
+  background: rgb(5 8 15 / 88%);
+  border: 1px solid rgb(255 210 74 / 22%);
+  border-radius: 4px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  backdrop-filter: blur(12px);
+}
+.map-toolbar button {
+  border: 1px solid rgb(255 210 74 / 35%);
+  background: rgb(255 210 74 / 8%);
+  color: #ffd24a;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.timeline-svg {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 130px);
+  min-height: 520px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.timeline-svg:active {
+  cursor: grabbing;
+}
+.year-line {
+  stroke: #627092;
+  stroke-width: 0.45;
+  stroke-dasharray: 2 5;
+  opacity: 0.32;
+}
+.year-label {
+  fill: #627092;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.reality-line {
+  stroke-width: 1.2;
+  opacity: 0.52;
+}
+.reality-entry,
+.reality-splinter {
+  stroke-width: 1.4;
+  opacity: 0.72;
+}
+.reality-splinter {
+  stroke-dasharray: 2 1;
+}
+.main-line {
+  stroke-width: 3.4;
+  filter: url('#goldGlow');
+}
+.lane {
+  transition: opacity 160ms ease;
+}
+.lane.dim {
+  opacity: 0.08;
+}
+.lane-label-bg {
+  fill: rgb(4 7 13 / 88%);
+  stroke: rgb(255 255 255 / 8%);
+  stroke-width: 0.4;
+}
+.lane-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+.project-mark {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 120ms ease;
+}
+.project-mark.hidden {
+  opacity: 0.055;
+  pointer-events: none;
+}
+.project-mark:focus .tick-mark,
+.project-mark:hover .tick-mark,
+.project-mark.selected .tick-mark {
+  stroke-width: 3.2;
+}
+.project-mark.selected circle {
+  filter: url('#goldGlow');
+}
+.tick-mark {
+  stroke-width: 1.6;
+}
+.project-label {
+  fill: #dce5ff;
+  font-size: 6.5px;
+  paint-order: stroke;
+  stroke: #060911;
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+.scrub-line {
+  stroke: #fff0aa;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.58;
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .map-toolbar {
+    top: 68px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .map-toolbar > span {
+    width: 100%;
+    text-align: center;
+  }
+  #title {
+    display: none;
+  }
+  #controls {
+    top: auto;
+    right: 8px;
+    bottom: 54px;
+    width: min(258px, calc(100vw - 16px));
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+  .year-ruler {
+    top: 122px;
+    left: 8px;
+    right: 8px;
+  }
+}
 .vignette {
   position: fixed;
   inset: 0;
@@ -932,5 +1119,35 @@ button.btn.act {
   #burger .bar,
   #dbProgFill {
     transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  #title {
+    display: none;
+  }
+  #controls {
+    top: auto;
+    right: 8px;
+    bottom: 58px;
+    width: min(258px, calc(100vw - 16px));
+    max-height: 38vh;
+    overflow-y: auto;
+  }
+  #controls > .row,
+  #controls > h2 {
+    display: none;
+  }
+  .map-toolbar {
+    top: 68px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .map-toolbar > span {
+    width: 100%;
+    text-align: center;
   }
 }

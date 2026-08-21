@@ -8,8 +8,9 @@ decisions were made, and how data flows through the system.
 The MCU Temporal Loom is a **single-page app rendered by Next.js** that visualises the
 Marvel multiverse timeline. It presents two views:
 
-1. **Loom view** — an interactive Three.js 3D point cloud where each timeline entry is a
-   coloured point positioned along a golden temporal trunk based on its year.
+1. **Loom view** — an interactive SVG chronology where Earth-616 is the central gold
+   timeline, projects are compact tick marks, and alternate realities occupy separate
+   coloured lanes.
 2. **Database view** — a sortable, readable HTML table of the same entries.
 
 Both views are driven by the same typed data, surfaced through a repository interface,
@@ -21,7 +22,7 @@ so presentation and data concerns stay separate.
 │                                                            │
 │   TimelineExplorer (client)                                │
 │   ├── TimelineCanvas (Three.js loom)                       │
-│   └── TimelineTable (catalogue)                            │
+│   └── DatabaseView (catalogue and session-only controls)   │
 └───────────────────────────┬────────────────────────────────┘
                             │ server-rendered initial props
 ┌───────────────────────────▼────────────────────────────────┐
@@ -48,7 +49,7 @@ so presentation and data concerns stay separate.
 | **React 19 + TypeScript**    | Strict, typed client/server component boundaries. `strict: true` in `tsconfig.json`.             |
 | **PostgreSQL + Drizzle ORM** | Relational persistence with a typed query builder, SQL migrations, and a repository abstraction. |
 | **Tailwind CSS 4**           | Utility-first styling; custom design tokens live in `globals.css` via `@theme`.                  |
-| **Three.js**                 | 3D rendering for the temporal loom, isolated behind one class.                                   |
+| **SVG**                      | Accessible, deterministic timeline lanes that remain crisp while panning and zooming.            |
 | **Zod 4**                    | Runtime validation of API input before it reaches the repository.                                |
 | **postgres.js**              | Lightweight PostgreSQL driver used both by the Drizzle client and the seed/migration tooling.    |
 | **Prettier**                 | Code formatting, enforced by `npm run format:check` inside `npm run check`.                      |
@@ -78,8 +79,8 @@ The Drizzle runtime layer:
 
 - `lib/db/schema.ts` — the Drizzle schema (the database source of truth), mirroring the
   four tables: `timelineEntries`, `users`, `watchRecords`, and `releaseQueueItems`.
-- `lib/db.ts` — creates the postgres.js connection and the Drizzle client, cached on
-  `globalThis` outside production to survive hot reloads.
+- `lib/db.ts` — lazily creates one postgres.js pool and Drizzle client per runtime,
+  cached on `globalThis` to survive hot reloads and runtime reuse.
 - `lib/db/seed.ts` + `lib/db/seed-data.json` — the idempotent seeder and its 278 records.
 
 ### 3. Repositories (`lib/repositories/`)
@@ -100,17 +101,23 @@ presentation code testable without a database.
   queries the repository.
 - `components/timeline-explorer.tsx` — a client component owning the view toggle, and
   client-side search/reality filtering over the server-provided entries.
-- `components/timeline-canvas.tsx` — the client component wrapping the Three.js scene.
+- `components/timeline-map.tsx` — the interactive SVG chronology map and its imperative
+  navigation bridge used by database-to-loom actions.
 
 ## Data flow
 
 ### Server-rendered page (default)
 
 1. `HomePage` (server) calls `getTimelineRepository()`.
-2. It fetches `find()` (entries) and `realities()` in parallel.
-3. Data is passed to `TimelineExplorer` as `initialEntries` and `realities`.
-4. The client component filters locally via `useDeferredValue` + `useMemo`, so typing in
-   the search box never hits the network.
+2. It fetches the `main`, `90s`, `2010s`, and `universe-keys` datasets in parallel.
+3. The four datasets are passed to `TimelineExplorer`.
+4. `TimelineExplorer` maps entries into loom points, while `DatabaseView` filters and
+   sorts the selected dataset locally with `useMemo`, so typing never hits the network.
+
+Watched markers, custom release-queue entries, queue completion/removal state, and the
+print/archive button states currently live only in `DatabaseView` React state. They are
+not persisted and reset on reload. The `users`, `watchRecords`, and `releaseQueueItems`
+tables are schema groundwork for a future authenticated persistence workflow.
 
 ### API route (`GET /api/timeline`)
 
@@ -135,22 +142,21 @@ Timestamps are managed by Drizzle's `defaultNow()` at the column level; the seed
 repository never construct them by hand (the `updated_at` columns default to
 `CURRENT_TIMESTAMP`, so the `onConflictDoUpdate` seed also bumps `updatedAt` on updates).
 
-## The Three.js scene
+## The temporal map
 
-`TemporalLoomScene` (inside `components/timeline-canvas.tsx`) owns all Three.js state:
+`TimelineMap` (inside `components/timeline-map.tsx`) renders the loom as semantic SVG:
 
-- Creates a `WebGLRenderer`, a perspective camera, and a scene.
-- Builds a golden line along the X axis (the "trunk").
-- Maps each entry to a 3D point:
-  - X position derives from `yearStart` (clamped to the trunk bounds).
-  - Y/Z position wraps around the trunk based on the entry's reality and index.
-  - Colour is derived from the reality index via HSL.
-- Runs a single animation frame loop (slow X rotation).
-- Handles resize through a `ResizeObserver`.
-- Exposes `dispose()` for full cleanup (renderer, geometries, materials, observer).
+- Earth-616 is the central, visually dominant gold lane.
+- Every project is a short tick rather than a decorative branch.
+- Other realities are deterministic coloured lanes above and below Earth-616.
+- Labels alternate around lanes and increase in density as the user zooms.
+- Dragging pans the chronology and wheel input zooms around the pointer position.
+- Project markers are keyboard focusable and open the existing detail card.
+- A vertical scrub line dims projects beyond the selected temporal position.
+- The imperative `LoomHandle` preserves database-to-map navigation and existing controls.
 
-The React component mounts the scene in a `useEffect` and disposes it on unmount or
-when `entries` changes.
+The map uses React state and effects only for interaction and timed scrubbing. Its interval
+is cleaned up whenever playback stops or the component unmounts.
 
 ## Fail-soft behaviour
 

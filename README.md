@@ -1,6 +1,7 @@
 # MCU Temporal Loom
 
-A database-backed Next.js application for exploring the Marvel multiverse timeline as a searchable catalogue and a Three.js temporal loom.
+A database-backed Next.js application for exploring the Marvel multiverse timeline as a
+searchable catalogue and an interactive SVG chronology map.
 
 ## Architecture
 
@@ -8,10 +9,15 @@ A database-backed Next.js application for exploring the Marvel multiverse timeli
 - **React 19 + TypeScript** provide typed server/client component boundaries.
 - **PostgreSQL + Drizzle ORM** persist timeline entries, users, watch records, and release queues.
 - **Tailwind CSS 4** owns component styling; the small global stylesheet contains only design tokens and document defaults.
-- **Three.js** is isolated behind `TemporalLoomScene`, which owns its renderer, animation frame, resize observer, and cleanup lifecycle.
+- **SVG** renders the temporal map as deterministic horizontal reality lanes with
+  accessible project markers, panning, zooming, filtering, and time scrubbing.
 - **Zod** validates API input before it reaches the repository.
 
 Runtime code does not parse CSV, use browser storage, or call static utility methods. Pages and API routes receive data through the `TimelineRepository` interface, whose production implementation is `DrizzleTimelineRepository`.
+
+Timeline catalogue data is persisted in PostgreSQL. Watched markers and release-queue
+controls are currently session-only UI state and reset when the page is reloaded; the
+related database tables are reserved for a future authenticated-user workflow.
 
 ## Local setup
 
